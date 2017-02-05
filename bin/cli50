@@ -1,0 +1,12 @@
+#!/bin/bash
+
+docker run \
+    --hostname cli50 \
+    --interactive \
+    --name cli50 \
+    --publish-all \
+    --rm \
+    --tty \
+    --volume "$(PWD)":/root \
+    --workdir /root \
+    cs50/cli
