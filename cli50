@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# check for docker
+if ! command -v docker > /dev/null 2>&1; then
+    echo "Missing dependency. Install \`docker\`."
+    exit 1
+fi
+
+# mount $PWD in CS50 CLI
+docker run \
+    --hostname cli50 \
+    --interactive \
+    --name cli50 \
+    --publish-all \
+    --rm \
+    --tty \
+    --volume "$PWD":/root \
+    --workdir /root \
+    cs50/cli
