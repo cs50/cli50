@@ -5,3 +5,7 @@ build: clean
 .PHONY: clean
 clean:
 	rm -rf *.egg-info build dist
+
+.PHONY: install
+install: build
+	pip install dist/cli50*.tar.gz
