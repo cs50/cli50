@@ -8,42 +8,35 @@ import sys
 
 def main():
 
-    # check for docker
-    if not distutils.spawn.find_executable("docker"):
-        sys.exit("Missing dependency. Install `docker`.")
-
     # parse command-line arguments
-    parser = argparse.ArgumentParser(prog="submit50", add_help=False)
-    parser.add_argument("-h", "--help", action="store_true")
-    parser.add_argument("-u", "--update", action="store_true")
-    parser.add_argument("args", nargs="*")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", nargs="?", default=os.getcwd())
     args = vars(parser.parse_args())
 
-    # usage
-    if args["help"]:
-        usage()
-        sys.exit(0)
+    # check for docker
+    if distutils.spawn.find_executable("docker"):
+        parser.error("docker not installed")
+
+    # ensure directory exists
+    directory = os.path.realpath(args["directory"])
+    if not os.path.isdir(directory):
+        parser.error("{}: no such directory".format(args["directory"]))
 
     # update image
-    if args["update"]:
-        subprocess.call(["docker", "pull", "cs50/cli"])
+    subprocess.call(["docker", "pull", "cs50/cli"])
 
-    # mount current working directory in CS50 CLI
+    # mount directory in CS50 CLI
     subprocess.call([
         "docker", "run",
             "--hostname", "cli50",
             "--interactive",
-            "--name", "cli50",
             "--publish-all",
             "--rm",
             "--tty",
-            "--volume", os.getcwd() + ":/root",
+            "--volume", directory + ":/root",
             "--workdir", "/root",
             "cs50/cli"
             ])
-
-def usage():
-    print("Usage: cli50 [--update] [directory]")
 
 if __name__ == "__main__":
     main()
