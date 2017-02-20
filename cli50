@@ -14,7 +14,7 @@ def main():
     args = vars(parser.parse_args())
 
     # check for docker
-    if distutils.spawn.find_executable("docker"):
+    if not distutils.spawn.find_executable("docker"):
         parser.error("docker not installed")
 
     # ensure directory exists
