@@ -28,7 +28,6 @@ def main():
     # mount directory in CS50 CLI
     subprocess.call([
         "docker", "run",
-            "--hostname", "cli50",
             "--interactive",
             "--publish-all",
             "--rm",
