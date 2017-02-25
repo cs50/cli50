@@ -1,5 +1,6 @@
 .PHONY: build
 build: clean
+	ln -f -s README.md README.txt
 	python3 setup.py sdist
 
 .PHONY: clean
