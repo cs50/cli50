@@ -1,0 +1,11 @@
+language: python
+
+python: "3.4"
+
+script: make build
+
+before_deploy: pip install twine
+
+deploy:
+  provider: script
+  script: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*

@@ -1,3 +1,0 @@
-# CS50 CLI
-
-TODO
