@@ -1,5 +1,5 @@
-# CS50 CLI
+# `cli50`
 
 [![Build Status](https://travis-ci.org/cs50/cli50.svg?branch=master)](https://travis-ci.org/cs50/cli50)
 
-This is CS50 CLI, with which you can mount a directory inside of an Ubuntu container.
+This is `cli50`, a command-line script that facilitates using [CS50 CLI](https://github.com/cs50/cli).
