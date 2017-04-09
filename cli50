@@ -31,6 +31,7 @@ def main():
             "--interactive",
             "--publish-all",
             "--rm",
+            "--security-opt seccomp=unconfined", # http://stackoverflow.com/questions/35860527/warning-error-disabling-address-space-randomization-operation-not-permitted#comment62818827_35860527
             "--tty",
             "--volume", directory + ":/root",
             "--workdir", "/root",
