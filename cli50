@@ -3,13 +3,18 @@
 import argparse
 import distutils.spawn
 import os
+import signal
 import subprocess
 import sys
 
 def main():
 
+    # listen for ctrl-c
+    signal.signal(signal.SIGINT, handler)
+
     # parse command-line arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("directory", nargs="?", default=os.getcwd())
     args = vars(parser.parse_args())
 
@@ -23,7 +28,8 @@ def main():
         parser.error("{}: no such directory".format(args["directory"]))
 
     # update image
-    subprocess.call(["docker", "pull", "cs50/cli"])
+    if not args["fast"]:
+        subprocess.call(["docker", "pull", "cs50/cli"])
 
     # mount directory in CS50 CLI
     subprocess.call([
@@ -37,6 +43,10 @@ def main():
             "--workdir", "/root",
             "cs50/cli"
             ])
+
+def handler(number, frame):
+    """Handle SIGINT."""
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
