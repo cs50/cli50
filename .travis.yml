@@ -1,34 +1,18 @@
 language: python
-
-python: "3.4"
-
-# don't build tags
+python: '3.4'
 branches:
-  except: /^v\d/
-
-# build sdist
-script: make build
-
-# install twine for uploading to PyPI
-before_deploy: pip install twine
-
+  except: "/^v\\d/"
+install: true
+script: true
 deploy:
-
-  # create github release
-  - provider: script
-    script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\", \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\" }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
-    on:
-      branch: master
-
-  # deploy to PyPI
-  - provider: script
-
-    # upload sdist to PyPI
-    script: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
-
-    # avoid stashing sdist
-    skip_cleanup: true
-
-    # deploy on commits to master
-    on:
-      branch: master
+- provider: script
+  script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\",
+    \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\"
+    }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
+  on:
+    branch: master
+- provider: pypi
+  user: "$PYPI_USERNAME"
+  password: "$PYPI_PASSWORD"
+  on:
+    branch: master
