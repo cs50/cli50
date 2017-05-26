@@ -3,6 +3,7 @@
 import argparse
 import distutils.spawn
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -31,7 +32,40 @@ def main():
     if not args["fast"]:
         subprocess.call(["docker", "pull", "cs50/cli"])
 
-    # mount directory in CS50 CLI
+    # check for running containers
+    stdout = subprocess.check_output([
+        "docker", "ps",
+            "--all",
+            "--filter",
+            "volume={}".format(directory),
+            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}"
+            ]).decode("utf-8")
+    containers = []
+    for line in stdout.rstrip().splitlines():
+        ID, Image, RunningFor = line.split("\t")
+        if Image == "cs50/cli":
+            containers.append((ID, RunningFor.lower()))
+
+    # ask whether to use a running container
+    if containers:
+        print("{} is already mounted in {} {}.".format(directory, len(containers), "containers" if len(containers) > 1 else "container"))
+    for ID, RunningFor in containers:
+        while True:
+            stdin = input("New shell in {}, running for {}? [Y] ".format(ID, RunningFor))
+            if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
+                subprocess.call([
+                    "docker", "exec",
+                        "--interactive",
+                        "--tty",
+                        ID,
+                        "bash",
+                        "--login"
+                        ])
+                sys.exit(0)
+            else:
+                break
+
+    # mount directory in new container
     subprocess.call([
         "docker", "run",
             "--interactive",
@@ -46,7 +80,12 @@ def main():
 
 def handler(number, frame):
     """Handle SIGINT."""
+    print("")
     sys.exit(0)
 
 if __name__ == "__main__":
+    if sys.version_info < (2, 7):
+        sys.exit("CS50 CLI requires Python 2.7 or higher")
+    if sys.version_info.major == 2:
+        input = raw_input
     main()
