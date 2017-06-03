@@ -16,7 +16,7 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
-    parser.add_argument("directory", nargs="?", default=os.getcwd())
+    parser.add_argument("directory", default=os.getcwd(), nargs="?", help="directory to mount")
     args = vars(parser.parse_args())
 
     # check for docker
