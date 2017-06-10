@@ -38,12 +38,12 @@ def main():
             "--all",
             "--filter",
             "volume={}".format(directory),
-            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}"
+            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}"
             ]).decode("utf-8")
     containers = []
     for line in stdout.rstrip().splitlines():
-        ID, Image, RunningFor = line.split("\t")
-        if Image == "cs50/cli":
+        ID, Image, RunningFor, Status = line.split("\t")
+        if Image == "cs50/cli" and Status.startswith("Up"):
             containers.append((ID, RunningFor.lower()))
 
     # ask whether to use a running container
