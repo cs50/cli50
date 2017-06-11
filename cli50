@@ -8,6 +8,13 @@ import signal
 import subprocess
 import sys
 
+# require python 2.7
+if sys.version_info < (2, 7):
+    sys.exit("CS50 CLI requires Python 2.7 or higher")
+if sys.version_info < (3, 0):
+    input = raw_input
+
+
 def main():
 
     # listen for ctrl-c
@@ -34,16 +41,16 @@ def main():
 
     # check for running containers
     stdout = subprocess.check_output([
-        "docker", "ps",
+            "docker", "ps",
             "--all",
             "--filter",
             "volume={}".format(directory),
-            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}"
+            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}"
             ]).decode("utf-8")
     containers = []
     for line in stdout.rstrip().splitlines():
-        ID, Image, RunningFor = line.split("\t")
-        if Image == "cs50/cli":
+        ID, Image, RunningFor, Status = line.split("\t")
+        if Image == "cs50/cli" and Status.startswith("Up"):
             containers.append((ID, RunningFor.lower()))
 
     # ask whether to use a running container
@@ -65,27 +72,29 @@ def main():
             else:
                 break
 
+    # options
+    options = ["--interactive",
+               "--publish-all",
+               "--rm",
+               "--security-opt", "seccomp=unconfined", # https://stackoverflow.com/q/35860527#comment62818827_35860527
+               "--tty",
+               "--volume", directory + ":/root",
+               "--workdir", "/root"]
+
+    # mount ~/.gitconfig read-only, if exists
+    gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
+    if os.path.isfile(gitconfig):
+        options += ["--volume", "{}:/root/.gitconfig:ro".format(gitconfig)]
+
     # mount directory in new container
-    subprocess.call([
-        "docker", "run",
-            "--interactive",
-            "--publish-all",
-            "--rm",
-            "--security-opt", "seccomp=unconfined", # http://stackoverflow.com/questions/35860527/warning-error-disabling-address-space-randomization-operation-not-permitted#comment62818827_35860527
-            "--tty",
-            "--volume", directory + ":/root",
-            "--workdir", "/root",
-            "cs50/cli"
-            ])
+    subprocess.call(["docker", "run"] + options + ["cs50/cli"])
+
 
 def handler(number, frame):
     """Handle SIGINT."""
     print("")
     sys.exit(0)
 
+
 if __name__ == "__main__":
-    if sys.version_info < (2, 7):
-        sys.exit("CS50 CLI requires Python 2.7 or higher")
-    if sys.version_info.major == 2:
-        input = raw_input
     main()
