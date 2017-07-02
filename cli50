@@ -8,7 +8,7 @@ import signal
 import subprocess
 import sys
 
-# require python 2.7
+# Require python 2.7
 if sys.version_info < (2, 7):
     sys.exit("CS50 CLI requires Python 2.7 or higher")
 if sys.version_info < (3, 0):
@@ -17,29 +17,29 @@ if sys.version_info < (3, 0):
 
 def main():
 
-    # listen for ctrl-c
+    # Listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
 
-    # parse command-line arguments
+    # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("directory", default=os.getcwd(), nargs="?", help="directory to mount")
     args = vars(parser.parse_args())
 
-    # check for docker
+    # Check for docker
     if not distutils.spawn.find_executable("docker"):
         parser.error("docker not installed")
 
-    # ensure directory exists
+    # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
         parser.error("{}: no such directory".format(args["directory"]))
 
-    # update image
+    # Update image
     if not args["fast"]:
         subprocess.call(["docker", "pull", "cs50/cli"])
 
-    # check for running containers
+    # Check for running containers
     stdout = subprocess.check_output([
             "docker", "ps",
             "--all",
@@ -53,7 +53,7 @@ def main():
         if Image == "cs50/cli" and Status.startswith("Up"):
             containers.append((ID, RunningFor.lower()))
 
-    # ask whether to use a running container
+    # Ask whether to use a running container
     if containers:
         print("{} is already mounted in {} {}.".format(directory, len(containers), "containers" if len(containers) > 1 else "container"))
     for ID, RunningFor in containers:
@@ -72,21 +72,21 @@ def main():
             else:
                 break
 
-    # options
+    # Options
     options = ["--interactive",
-               "--publish-all",
+               "--publish", "8080-8082:8080-8082", # a la CS50 IDE
                "--rm",
                "--security-opt", "seccomp=unconfined", # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
                "--volume", directory + ":/root",
                "--workdir", "/root"]
 
-    # mount ~/.gitconfig read-only, if exists
+    # Mount ~/.gitconfig read-only, if exists
     gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
     if os.path.isfile(gitconfig):
         options += ["--volume", "{}:/root/.gitconfig:ro".format(gitconfig)]
 
-    # mount directory in new container
+    # Mount directory in new container
     subprocess.call(["docker", "run"] + options + ["cs50/cli"])
 
 
