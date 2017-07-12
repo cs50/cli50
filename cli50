@@ -40,18 +40,22 @@ def main():
         subprocess.call(["docker", "pull", "cs50/cli"])
 
     # Check for running containers
-    stdout = subprocess.check_output([
-            "docker", "ps",
-            "--all",
-            "--filter",
-            "volume={}".format(directory),
-            "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}"
-            ]).decode("utf-8")
-    containers = []
-    for line in stdout.rstrip().splitlines():
-        ID, Image, RunningFor, Status = line.split("\t")
-        if Image == "cs50/cli" and Status.startswith("Up"):
-            containers.append((ID, RunningFor.lower()))
+    try:
+        stdout = subprocess.check_output([
+                "docker", "ps",
+                "--all",
+                "--filter",
+                "volume={}".format(directory),
+                "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}"
+                ]).decode("utf-8")
+    except subprocess.CalledProcessError:
+        sys.exit(1)
+    else:
+        containers = []
+        for line in stdout.rstrip().splitlines():
+                ID, Image, RunningFor, Status = line.split("\t")
+                if Image == "cs50/cli" and Status.startswith("Up"):
+                    containers.append((ID, RunningFor.lower()))
 
     # Ask whether to use a running container
     if containers:
