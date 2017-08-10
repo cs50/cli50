@@ -77,7 +77,9 @@ def main():
                 break
 
     # Options
-    options = ["--interactive",
+    options = ["--env", "AWS_ACCESS_KEY_ID",
+               "--env", "AWS_SECRET_ACCESS_KEY",
+               "--interactive",
                "--publish", "8080-8082:8080-8082", # a la CS50 IDE
                "--rm",
                "--security-opt", "seccomp=unconfined", # https://stackoverflow.com/q/35860527#comment62818827_35860527
