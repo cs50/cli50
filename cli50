@@ -78,7 +78,6 @@ def main():
 
     # Options
     options = ["--env", "AWS_ACCESS_KEY_ID",
-               "--env", "AWS_DEFAULT_REGION",
                "--env", "AWS_SECRET_ACCESS_KEY",
                "--interactive",
                "--publish", "8080-8082:8080-8082", # a la CS50 IDE
