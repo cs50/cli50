@@ -37,7 +37,7 @@ def main():
 
     # Update image
     if not args["fast"]:
-        subprocess.call(["docker", "pull", "cs50/cli"])
+        subprocess.call(["docker", "pull", "cs50/cli:ubuntu"])
 
     # Check for running containers
     try:
@@ -77,23 +77,21 @@ def main():
                 break
 
     # Options
-    options = ["--env", "AWS_ACCESS_KEY_ID",
-               "--env", "AWS_SECRET_ACCESS_KEY",
-               "--interactive",
-               "--publish", "8080-8082:8080-8082", # a la CS50 IDE
+    options = ["--interactive",
+               "--publish", "8080-8082", # a la CS50 IDE
                "--rm",
                "--security-opt", "seccomp=unconfined", # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
-               "--volume", directory + ":/root",
-               "--workdir", "/root"]
+               "--volume", directory + ":/home/ubuntu/workspace",
+               "--workdir", "/home/ubuntu/workspace"]
 
     # Mount ~/.gitconfig read-only, if exists
     gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
     if os.path.isfile(gitconfig):
-        options += ["--volume", "{}:/root/.gitconfig:ro".format(gitconfig)]
+        options += ["--volume", "{}:/home/ubuntu/.gitconfig:ro".format(gitconfig)]
 
     # Mount directory in new container
-    subprocess.call(["docker", "run"] + options + ["cs50/cli"])
+    subprocess.call(["docker", "run"] + options + ["cs50/cli:ubuntu"])
 
 
 def handler(number, frame):
