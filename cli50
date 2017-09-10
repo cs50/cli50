@@ -37,7 +37,7 @@ def main():
 
     # Update image
     if not args["fast"]:
-        subprocess.call(["docker", "pull", "cs50/cli"])
+        subprocess.call(["docker", "pull", "cs50/cli:ubuntu"])
 
     # Check for running containers
     stdout = subprocess.check_output([
@@ -50,7 +50,7 @@ def main():
     containers = []
     for line in stdout.rstrip().splitlines():
         ID, Image, RunningFor, Status = line.split("\t")
-        if Image == "cs50/cli" and Status.startswith("Up"):
+        if Image == "cs50/cli:ubuntu" and Status.startswith("Up"):
             containers.append((ID, RunningFor.lower()))
 
     # Ask whether to use a running container
@@ -87,7 +87,7 @@ def main():
         options += ["--volume", "{}:/home/ubuntu/.gitconfig:ro".format(gitconfig)]
 
     # Mount directory in new container
-    subprocess.call(["docker", "run"] + options + ["cs50/cli"])
+    subprocess.call(["docker", "run"] + options + ["cs50/cli:ubuntu"])
 
 
 def handler(number, frame):
