@@ -23,6 +23,8 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
+    parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
+    parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
     parser.add_argument("-t", "--tag", default="latest", help="start cs50/cli:TAG, else cs50/cli:latest", metavar="TAG")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help="directory to mount, else $PWD")
     args = vars(parser.parse_args())
@@ -97,9 +99,18 @@ def main():
                "--workdir", "/home/ubuntu/workspace"]
 
     # Mount ~/.gitconfig read-only, if exists
-    gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
-    if os.path.isfile(gitconfig):
+    if args["git"]:
+        gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
+        if not os.path.isfile(gitconfig):
+            sys.exit("{}: no such directory".format(gitconfig))
         options += ["--volume", "{}:/home/ubuntu/.gitconfig:ro".format(gitconfig)]
+
+    # Mount ~/.ssh read-only, if exists
+    if args["ssh"]:
+        ssh = os.path.join(os.path.expanduser("~"), ".ssh")
+        if not os.path.isdir(ssh):
+            sys.exit("{}: no such directory".format(ssh))
+        options += ["--volume", "{}:/home/ubuntu/.ssh:ro".format(ssh)]
 
     # Mount directory in new container
     try:
