@@ -41,7 +41,9 @@ def main():
 
     # Update image
     if not args["fast"]:
-        if subprocess.call(["docker", "pull", image]):
+        try:
+            subprocess.check_call(["docker", "pull", image])
+        except subprocess.CalledProcessError:
             sys.exit(1)
 
     # Check for running containers
@@ -69,16 +71,19 @@ def main():
         while True:
             stdin = input("New shell in {}, running for {}? [Y] ".format(ID, RunningFor))
             if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
-                if subprocess.call([
-                    "docker", "exec",
-                        "--interactive",
-                        "--tty",
-                        ID,
-                        "bash",
-                        "--login"
-                        ]):
+                try:
+                    subprocess.check_call([
+                        "docker", "exec",
+                            "--interactive",
+                            "--tty",
+                            ID,
+                            "bash",
+                            "--login"
+                            ])
+                except subprocess.CalledProcessError:
                     sys.exit(1)
-                sys.exit(0)
+                else:
+                    sys.exit(0)
             else:
                 break
 
@@ -97,9 +102,12 @@ def main():
         options += ["--volume", "{}:/home/ubuntu/.gitconfig:ro".format(gitconfig)]
 
     # Mount directory in new container
-    if subprocess.call(["docker", "run"] + options + [image]):
+    try:
+        subprocess.check_call(["docker", "run"] + options + [image])
+    except subprocess.CalledProcessError:
         sys.exit(1)
-    sys.exit(0)
+    else:
+        sys.exit(0)
 
 
 def handler(number, frame):
