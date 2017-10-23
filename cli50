@@ -90,11 +90,10 @@ def main():
                 break
 
     # Options
-    options = ["--interactive",
-               "--publish", "8080-8082", # a la CS50 IDE
+    options = ["--detach",
+               "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined", # https://stackoverflow.com/q/35860527#comment62818827_35860527
-               "--tty",
                "--volume", directory + ":/home/ubuntu/workspace",
                "--workdir", "/home/ubuntu/workspace"]
 
@@ -114,7 +113,19 @@ def main():
 
     # Mount directory in new container
     try:
-        subprocess.check_call(["docker", "run"] + options + [image])
+
+        # Run container
+    	id = subprocess.check_output(["docker", "run"] + options + [image, "sleep", "infinity"]).strip()
+
+        # Display port mappings
+    	print(subprocess.check_output(["docker", "port", id]).strip())
+
+        # Spawn login shell in container
+    	subprocess.check_call(["docker", "exec", "--interactive", "--tty", id, "bash", "--login"])
+
+        # Stop container
+    	subprocess.check_output(["docker", "stop", "--time", "0", id])
+
     except subprocess.CalledProcessError:
         sys.exit(1)
     else:
