@@ -113,10 +113,19 @@ def main():
 
     # Mount directory in new container
     try:
+
+        # Run container
     	id = subprocess.check_output(["docker", "run"] + options + [image, "sleep", "infinity"]).strip()
+
+        # Display port mappings
     	print(subprocess.check_output(["docker", "port", id]).strip())
+
+        # Spawn login shell in container
     	subprocess.check_call(["docker", "exec", "--interactive", "--tty", id, "bash", "--login"])
+
+        # Stop container
     	subprocess.check_output(["docker", "stop", "--time", "0", id])
+
     except subprocess.CalledProcessError:
         sys.exit(1)
     else:
