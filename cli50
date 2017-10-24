@@ -43,7 +43,7 @@ def main():
     parser.add_argument("-t", "--tag", default="latest",
                         help="start cs50/cli:TAG, else cs50/cli:latest", metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
-                        version=__version__)
+                        version="%(prog)s {}".format(__version__))
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
                         nargs="?", help="directory to mount, else $PWD")
     args = vars(parser.parse_args())
