@@ -118,7 +118,8 @@ def main():
     	id = subprocess.check_output(["docker", "run"] + options + [image, "sleep", "infinity"]).strip()
 
         # Display port mappings
-    	print(subprocess.check_output(["docker", "port", id]).strip())
+        for port in sorted(subprocess.check_output(["docker", "port", id]).strip().splitlines()):
+            print(port)
 
         # Spawn login shell in container
     	subprocess.check_call(["docker", "exec", "--interactive", "--tty", id, "bash", "--login"])
