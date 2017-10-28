@@ -15,5 +15,5 @@ setup(
     name="cli50",
     scripts=["cli50"],
     url="https://github.com/cs50/cli50",
-    version="1.8.0"
+    version="1.9.0"
 )
