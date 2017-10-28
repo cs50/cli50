@@ -17,17 +17,12 @@ if sys.version_info < (3, 0):
     input = raw_input
 
 # Get version
-# https://stackoverflow.com/a/17638236/5156190
 try:
-    _dist = pkg_resources.get_distribution("cli50")
-    dist_loc = os.path.normcase(_dist.location)
-    here = os.path.normcase(__file__)
-    if not here.startswith(os.path.join(dist_loc, "cli50")):
-        raise pkg_resources.DistributionNotFound
+    d = pkg_resources.get_distribution("cli50")
 except pkg_resources.DistributionNotFound:
     __version__ = "UNKNOWN"
 else:
-    __version__ = _dist.version
+    __version__ = d.version
 
 
 def main():
@@ -136,7 +131,7 @@ def main():
 
         # Run container
         id = subprocess.check_output(["docker", "run"] + options +
-                                     [image, "sleep", "1"]).strip()
+                                     [image, "sleep", "infinity"]).strip()
 
         # Display port mappings
         print(subprocess.check_output(["docker", "port", id]).strip())
