@@ -17,17 +17,10 @@ if sys.version_info < (3, 0):
     input = raw_input
 
 # Get version
-# https://stackoverflow.com/a/17638236/5156190
 try:
-    _dist = pkg_resources.get_distribution("cli50")
-    dist_loc = os.path.normcase(_dist.location)
-    here = os.path.normcase(__file__)
-    if not here.startswith(os.path.join(dist_loc, "cli50")):
-        raise pkg_resources.DistributionNotFound
+    __version__ = pkg_resources.get_distribution("cli50").version
 except pkg_resources.DistributionNotFound:
     __version__ = "UNKNOWN"
-else:
-    __version__ = _dist.version
 
 
 def main():
