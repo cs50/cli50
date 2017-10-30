@@ -35,6 +35,7 @@ def main():
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
     parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
+    parser.add_argument("-S", "--stop", action="store_true", help="stop any containers")
     parser.add_argument("-t", "--tag", default="latest",
                         help="start cs50/cli:TAG, else cs50/cli:latest", metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
@@ -47,13 +48,29 @@ def main():
     if not distutils.spawn.find_executable("docker"):
         parser.error("Docker not installed.")
 
+    # Image to use
+    image = "cs50/cli:{}".format(args["tag"])
+
+    # Stop containers
+    if args["stop"]:
+        try:
+            stdout = subprocess.check_output([
+                "docker", "ps",
+                "--all",
+                "--format", "{{.ID}}\t{{.Image}}"
+            ]).decode("utf-8")
+            for line in stdout.rstrip().splitlines():
+                ID, Image = line.split("\t")
+                if Image == image:
+                    subprocess.check_call(["docker", "stop", "--time", "0", ID])
+            sys.exit(0)
+        except subprocess.CalledProcessError:
+            sys.exit(1)
+
     # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
         parser.error("{}: no such directory".format(args["directory"]))
-
-    # Image to use
-    image = "cs50/cli:{}".format(args["tag"])
 
     # Update image
     if not args["fast"]:
