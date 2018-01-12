@@ -34,7 +34,7 @@ def main():
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
     parser.add_argument("-p", "--publish", action="append",
-                        help="publish container's port(s) to host", metavar="LIST")
+                        help="publish container's port(s) to host", metavar="LIST", nargs="?")
     parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
     parser.add_argument("-S", "--stop", action="store_true", help="stop any containers")
     parser.add_argument("-t", "--tag", default="latest",
@@ -45,7 +45,7 @@ def main():
                         nargs="?", help="directory to mount, else $PWD")
     args = vars(parser.parse_args())
 
-    # Check for docker
+    # Check for Docker
     if not distutils.spawn.find_executable("docker"):
         parser.error("Docker not installed.")
 
@@ -123,7 +123,6 @@ def main():
 
     # Options
     options = ["--interactive",
-               "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
@@ -136,7 +135,8 @@ def main():
             options += ["--publish", "8080", "--publish", "8081:8081", "--publish", "8082:8082"]
         else:  # If --publish with LIST
             for port in args["publish"]:
-                options += ["--publish", port]
+                if port:
+                    options += ["--publish", port]
 
     # Mount ~/.gitconfig read-only, if exists
     if args["git"]:
