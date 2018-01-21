@@ -1,20 +1,20 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import distutils.spawn
+import inflect
 import os
 import pkg_resources
 import re
+import shutil 
 import signal
 import subprocess
 import sys
 
 
-# Require python 2.7
-if sys.version_info < (2, 7):
-    sys.exit("CS50 CLI requires Python 2.7 or higher")
-if sys.version_info < (3, 0):
-    input = raw_input
+# Require Python 3.6
+if sys.version_info < (3, 6):
+    sys.exit("CS50 CLI requires Python 3.6 or higher")
 
 # Get version
 try:
@@ -34,6 +34,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
+    parser.add_argument("-p", "--publish", action="append",
+                        help="publish container's port(s) to host", metavar="LIST", nargs="?")
     parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
     parser.add_argument("-S", "--stop", action="store_true", help="stop any containers")
     parser.add_argument("-t", "--tag", default="latest",
@@ -44,12 +46,12 @@ def main():
                         nargs="?", help="directory to mount, else $PWD")
     args = vars(parser.parse_args())
 
-    # Check for docker
+    # Check for Docker
     if not distutils.spawn.find_executable("docker"):
         parser.error("Docker not installed.")
 
     # Image to use
-    image = "cs50/cli:{}".format(args["tag"])
+    image = f"cs50/cli:{args['tag']}"
 
     # Stop containers
     if args["stop"]:
@@ -70,7 +72,7 @@ def main():
     # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
-        parser.error("{}: no such directory".format(args["directory"]))
+        parser.error(f"{args['directory']}: no such directory")
 
     # Update image
     if not args["fast"]:
@@ -85,7 +87,7 @@ def main():
             "docker", "ps",
             "--all",
             "--filter",
-            "volume={}".format(directory),
+            f"volume={directory}",
             "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}"
         ]).decode("utf-8")
     except subprocess.CalledProcessError:
@@ -99,11 +101,10 @@ def main():
 
     # Ask whether to use a running container
     if containers:
-        print("{} is already mounted in {} {}.".format(directory, len(
-            containers), "containers" if len(containers) > 1 else "container"))
+        print(f"{directory} is already mounted in {len(containers)} {inflect.engine().plural('container', len(containers))}.")
     for ID, RunningFor in containers:
         while True:
-            stdin = input("New shell in {}, running for {}? [Y] ".format(ID, RunningFor))
+            stdin = input(f"New shell in {ID}, running for {RunningFor}? [Y] ")
             if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
                 try:
                     subprocess.check_call([
@@ -122,51 +123,41 @@ def main():
                 break
 
     # Options
-    options = ["--detach",
-               "--publish-all",
+    options = ["--interactive",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
+               "--tty",
                "--volume", directory + ":/home/ubuntu/workspace",
                "--workdir", "/home/ubuntu/workspace"]
+
+    # Ports to publish
+    if isinstance(args["publish"], list):
+        if len(args["publish"]) == 0:  # If --publish without LIST
+            options += ["--publish", "8080", "--publish", "8081:8081", "--publish", "8082:8082"]
+        else:  # If --publish with LIST
+            for port in args["publish"]:
+                if port:
+                    options += ["--publish", port]
 
     # Mount ~/.gitconfig read-only, if exists
     if args["git"]:
         gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
         if not os.path.isfile(gitconfig):
-            sys.exit("{}: no such directory".format(gitconfig))
-        options += ["--volume", "{}:/home/ubuntu/.gitconfig:ro".format(gitconfig)]
+            sys.exit(f"{gitconfig}: no such directory")
+        options += ["--volume", f"{gitconfig}:/home/ubuntu/.gitconfig:ro"]
 
     # Mount ~/.ssh read-only, if exists
     if args["ssh"]:
         ssh = os.path.join(os.path.expanduser("~"), ".ssh")
         if not os.path.isdir(ssh):
-            sys.exit("{}: no such directory".format(ssh))
-        options += ["--volume", "{}:/home/ubuntu/.ssh:ro".format(ssh)]
+            sys.exit(f"{ssh}: no such directory")
+        options += ["--volume", f"{ssh}:/home/ubuntu/.ssh:ro"]
 
     # Mount directory in new container
     try:
-
-        # Run container
-        id = subprocess.check_output(["docker", "run"] + options +
-                                     [image, "sleep", "infinity"]).strip()
-
-        # Display port mappings
-        for port in sorted(subprocess.check_output(["docker", "port", id]).strip().splitlines()):
-            print(port)
-
-        # Spawn login shell in container
-        subprocess.check_call([
-            "docker", "exec",
-            "--interactive",
-            "--tty",
-            id,
-            "bash",
-            "--login"
-        ])
-
-        # Stop container
-        subprocess.check_output(["docker", "stop", "--time", "0", id])
-
+        columns, lines = shutil.get_terminal_size()  # https://github.com/moby/moby/issues/25450
+        subprocess.check_call(["docker", "run"] + options + [image, "bash", "--login"],
+                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))
     except subprocess.CalledProcessError:
         sys.exit(1)
     else:
