@@ -99,6 +99,9 @@ def main():
             if Image == image and Status.startswith("Up"):
                 containers.append((ID, RunningFor.lower()))
 
+    # Get terminal size (until https://github.com/moby/moby/issues/25450 fixed)
+    columns, lines = shutil.get_terminal_size()
+
     # Ask whether to use a running container
     if containers:
         print(f"{directory} is already mounted in {len(containers)} {inflect.engine().plural('container', len(containers))}.")
@@ -109,6 +112,7 @@ def main():
                 try:
                     subprocess.check_call([
                         "docker", "exec",
+                        "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",  # Temporary
                         "--interactive",
                         "--tty",
                         ID,
@@ -155,9 +159,8 @@ def main():
 
     # Mount directory in new container
     try:
-        columns, lines = shutil.get_terminal_size()  # https://github.com/moby/moby/issues/25450
         subprocess.check_call(["docker", "run"] + options + [image, "bash", "--login"],
-                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))
+                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))  # Temporary
     except subprocess.CalledProcessError:
         sys.exit(1)
     else:
