@@ -16,5 +16,5 @@ setup(
     python_requires=">=3.6",
     scripts=["cli50"],
     url="https://github.com/cs50/cli50",
-    version="2.0.2"
+    version="2.0.3"
 )

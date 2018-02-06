@@ -113,6 +113,7 @@ def main():
                     subprocess.check_call([
                         "docker", "exec",
                         "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",  # Temporary
+                        "--env", f"LINES={str(lines)}",  # Temporary
                         "--interactive",
                         "--tty",
                         ID,
