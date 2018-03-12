@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import distutils.spawn
@@ -35,7 +35,9 @@ def main():
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
     parser.add_argument("-p", "--publish", action="append",
-                        help="publish container's port(s) to host", metavar="LIST", nargs="?")
+                        help="publish port(s) to ports on host", metavar="LIST", nargs="?")
+    parser.add_argument("-P", "--publish-all", action="store_true",
+                        help="publish exposed ports to random ports on host")
     parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
     parser.add_argument("-S", "--stop", action="store_true", help="stop any containers")
     parser.add_argument("-t", "--tag", default="latest",
@@ -137,12 +139,14 @@ def main():
 
     # Ports to publish
     if isinstance(args["publish"], list):
-        if len(args["publish"]) == 0:  # If --publish without LIST
-            options += ["--publish", "8080", "--publish", "8081:8081", "--publish", "8082:8082"]
+        if len(args["publish"]) == 1 and args["publish"][0] == None:  # If --publish without LIST
+            options += ["--publish", "8080:8080", "--publish", "8081:8081", "--publish", "8082:8082"]
         else:  # If --publish with LIST
             for port in args["publish"]:
                 if port:
                     options += ["--publish", port]
+    if args["publish_all"]:
+        options += ["--publish-all"]
 
     # Mount ~/.gitconfig read-only, if exists
     if args["git"]:
