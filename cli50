@@ -34,6 +34,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
     parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
+    parser.add_argument("-l", "--login", help="log into container", metavar="CONTAINER")
     parser.add_argument("-p", "--publish", action="append",
                         help="publish port(s) to ports on host", metavar="LIST", nargs="?")
     parser.add_argument("-P", "--publish-all", action="store_true",
@@ -76,12 +77,14 @@ def main():
     if not os.path.isdir(directory):
         parser.error(f"{args['directory']}: no such directory")
 
-    # Update image
-    if not args["fast"]:
+    # Log into container
+    if args["login"]:
         try:
-            subprocess.check_call(["docker", "pull", image])
+            login(args["login"])
         except subprocess.CalledProcessError:
             sys.exit(1)
+        else:
+            sys.exit(0)
 
     # Check for running containers
     try:
@@ -101,9 +104,6 @@ def main():
             if Image == image and Status.startswith("Up"):
                 containers.append((ID, RunningFor.lower()))
 
-    # Get terminal size (until https://github.com/moby/moby/issues/25450 fixed)
-    columns, lines = shutil.get_terminal_size()
-
     # Ask whether to use a running container
     if containers:
         print(f"{directory} is already mounted in {len(containers)} {inflect.engine().plural('container', len(containers))}.")
@@ -112,22 +112,20 @@ def main():
             stdin = input(f"New shell in {ID}, running for {RunningFor}? [Y] ")
             if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
                 try:
-                    subprocess.check_call([
-                        "docker", "exec",
-                        "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",  # Temporary
-                        "--env", f"LINES={str(lines)}",  # Temporary
-                        "--interactive",
-                        "--tty",
-                        ID,
-                        "bash",
-                        "--login"
-                    ])
-                except subprocess.CalledProcessError:
+                    login(ID)
+                except:
                     sys.exit(1)
                 else:
                     sys.exit(0)
             else:
                 break
+
+    # Update image
+    if not args["fast"]:
+        try:
+            subprocess.check_call(["docker", "pull", image])
+        except subprocess.CalledProcessError:
+            sys.exit(1)
 
     # Options
     options = ["--interactive",
@@ -164,6 +162,7 @@ def main():
 
     # Mount directory in new container
     try:
+        columns, lines = shutil.get_terminal_size()  # Temporary
         subprocess.check_call(["docker", "run"] + options + [image, "bash", "--login"],
                               env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))  # Temporary
     except subprocess.CalledProcessError:
@@ -176,6 +175,23 @@ def handler(number, frame):
     """Handle SIGINT."""
     print("")
     sys.exit(0)
+
+
+def login(container):
+    columns, lines = shutil.get_terminal_size()  # Temporary
+    try:
+        subprocess.check_call([
+            "docker", "exec",
+            "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",  # Temporary
+            "--env", f"LINES={str(lines)}",  # Temporary
+            "--interactive",
+            "--tty",
+            container,
+            "bash",
+            "--login"
+        ])
+    except subprocess.CalledProcessError:
+        raise RuntimeError()
 
 
 if __name__ == "__main__":
