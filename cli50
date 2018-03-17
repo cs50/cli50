@@ -6,7 +6,7 @@ import inflect
 import os
 import pkg_resources
 import re
-import shutil 
+import shutil
 import signal
 import subprocess
 import sys
@@ -81,7 +81,7 @@ def main():
     if args["login"]:
         try:
             login(args["login"])
-        except subprocess.CalledProcessError:
+        except:
             sys.exit(1)
         else:
             sys.exit(0)
@@ -191,7 +191,7 @@ def login(container):
             "--login"
         ])
     except subprocess.CalledProcessError:
-        raise RuntimeError()
+        raise RuntimeError() from None
 
 
 if __name__ == "__main__":
