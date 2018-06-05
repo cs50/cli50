@@ -6,6 +6,7 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import distutils.spawn
+import gettext
 import inflect
 import os
 import pexpect
@@ -15,6 +16,10 @@ import shlex
 import shutil
 import subprocess
 
+# Internationalization
+gettext.bindtextdomain("messages", os.path.join(sys.prefix, "cli50/locale"))
+gettext.textdomain("messages")
+_ = gettext.gettext
 
 # Require Python 3.6
 if sys.version_info < (3, 6):
