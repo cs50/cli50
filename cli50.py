@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 # Internationalization
-gettext.bindtextdomain("messages", os.path.join(sys.prefix, "cli50/locale"))
+gettext.bindtextdomain("messages", "locale")
 gettext.textdomain("messages")
 _ = gettext.gettext
 
@@ -28,7 +28,6 @@ except pkg_resources.DistributionNotFound:
     __version__ = "UNKNOWN"
 else:
     __version__ = d.version
-
 
 def main():
 
@@ -81,7 +80,7 @@ def main():
     # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
-        parser.error(_("%s: no such directory") % args['directory'])
+        parser.error(_("{}: no such directory").format(args['directory']))
 
     # Log into container
     if args["login"]:
@@ -117,9 +116,9 @@ def main():
         # Ask whether to use a running container
         for ID, Image, RunningFor, Mounts in containers:
             while True:
-                prompt = _(f"Log into {Image}, started {RunningFor}")
+                prompt = _("Log into {}, started {}").format(Image, RunningFor)
                 if Mounts:
-                    prompt += _(" with %s mounted") % inflect.engine().join(Mounts)
+                    prompt += _(" with {} mounted").format(inflect.engine().join(Mounts))
                 prompt += "? [Y] "
                 stdin = input(prompt)
                 if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
@@ -162,14 +161,14 @@ def main():
     if args["git"]:
         gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
         if not os.path.isfile(gitconfig):
-            sys.exit(_(f"{gitconfig}: no such directory"))
+            sys.exit(_("{}: no such directory").format(gitconfig))
         options += ["--volume", f"{gitconfig}:/home/ubuntu/.gitconfig:ro"]
 
     # Mount ~/.ssh read-only, if exists
     if args["ssh"]:
         ssh = os.path.join(os.path.expanduser("~"), ".ssh")
         if not os.path.isdir(ssh):
-            sys.exit(_(f"{ssh}: no such directory"))
+            sys.exit(_("{}: no such directory").format(ssh))
         options += ["--volume", f"{ssh}:/home/ubuntu/.ssh:ro"]
 
     # Mount directory in new container
