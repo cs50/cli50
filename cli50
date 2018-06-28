@@ -126,6 +126,7 @@ def main():
                         sys.exit(0)
                 else:
                     break
+            sys.exit(0)
 
     # Update image
     if not args["fast"]:
