@@ -126,7 +126,7 @@ def main():
                         sys.exit(0)
                 else:
                     break
-            sys.exit(0)
+        sys.exit("No containers are running.")
 
     # Update image
     if not args["fast"]:
@@ -181,7 +181,7 @@ def main():
 
 def handler(number, frame):
     """Handle SIGINT."""
-    print("")
+    print()
     sys.exit(0)
 
 
