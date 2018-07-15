@@ -1,0 +1,71 @@
+# Translations template for cli50.
+# Copyright (C) 2018 ORGANIZATION
+# This file is distributed under the same license as the cli50 project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: cli50 2.4.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2018-07-15 12:19-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.6.0\n"
+
+#: cli50/__main__.py:27
+msgid "skip autoupdate"
+msgstr ""
+
+#: cli50/__main__.py:28
+msgid "mount .gitconfig"
+msgstr ""
+
+#: cli50/__main__.py:29
+msgid "log into container"
+msgstr ""
+
+#: cli50/__main__.py:32
+msgid "publish port(s) to ports on host"
+msgstr ""
+
+#: cli50/__main__.py:34
+msgid "publish exposed ports to random ports on host"
+msgstr ""
+
+#: cli50/__main__.py:35
+msgid "mount .ssh"
+msgstr ""
+
+#: cli50/__main__.py:36
+msgid "stop any containers"
+msgstr ""
+
+#: cli50/__main__.py:38
+msgid "start cs50/cli:TAG, else cs50/cli:latest"
+msgstr ""
+
+#: cli50/__main__.py:42
+msgid "directory to mount, else $PWD"
+msgstr ""
+
+#: cli50/__main__.py:47
+msgid "Docker not installed."
+msgstr ""
+
+#: cli50/__main__.py:71 cli50/__main__.py:152 cli50/__main__.py:159
+msgid "{}: no such directory"
+msgstr ""
+
+#: cli50/__main__.py:107
+msgid "Log into {}, started {}"
+msgstr ""
+
+#: cli50/__main__.py:109
+msgid " with {} mounted"
+msgstr ""
+

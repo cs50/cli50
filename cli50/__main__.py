@@ -1,37 +1,25 @@
-#!/usr/bin/env python3
-
 import signal
 import sys
 signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
-import distutils.spawn
 import gettext
-import inflect
 import os
 import pexpect
 import pkg_resources
 import re
-import shlex 
+import shlex
 import shutil
 import subprocess
 
+import inflect
+
+from . import __version__
+
 # Internationalization
-gettext.bindtextdomain("messages", "locale")
-gettext.textdomain("messages")
-_ = gettext.gettext
-
-# Require Python 3.6
-if sys.version_info < (3, 6):
-    sys.exit(_("CS50 CLI requires Python 3.6 or higher"))
-
-# Get version
-try:
-    d = pkg_resources.get_distribution("cli50")
-except pkg_resources.DistributionNotFound:
-    __version__ = "UNKNOWN"
-else:
-    __version__ = d.version
+t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
+print(t)
+t.install()
 
 def main():
 
@@ -59,7 +47,7 @@ def main():
     args = vars(parser.parse_args())
 
     # Check for Docker
-    if not distutils.spawn.find_executable("docker"):
+    if not shutil.which("docker"):
         parser.error(_("Docker not installed."))
 
     # Image to use
@@ -143,7 +131,7 @@ def main():
 
     # Pull image if not found locally, autoupdate unless skipped
     try:
-        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL) 
+        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL)
         assert args["fast"]
     except (AssertionError, subprocess.CalledProcessError):
         try:
