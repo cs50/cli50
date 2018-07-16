@@ -9,6 +9,9 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development"
     ],
+    message_extractors = {
+        'cli50': [('**.py', 'python', None),],
+    },
     description="This is CS50 CLI, with which you can mount a directory inside of an Ubuntu container.",
     license="GPLv3",
     install_requires=["inflect", "pexpect"],
