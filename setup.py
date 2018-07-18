@@ -10,6 +10,7 @@ setup(
         "Topic :: Software Development"
     ],
     description="This is CS50 CLI, with which you can mount a directory inside of an Ubuntu container.",
+    license="GPLv3",
     install_requires=["inflect"],
     keywords="cli50",
     name="cli50",
