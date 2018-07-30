@@ -4,12 +4,15 @@ import argparse
 import distutils.spawn
 import inflect
 import os
+import pexpect
 import pkg_resources
 import re
+import shlex 
 import shutil
 import signal
 import subprocess
 import sys
+import time  # Temporary
 
 
 # Require Python 3.6
@@ -84,6 +87,7 @@ def main():
         # If container specified
         if isinstance(args["login"], str):
             try:
+                print(ports(args["login"]))
                 login(args["login"])
             except:
                 sys.exit(1)
@@ -108,6 +112,8 @@ def main():
                 Mounts = Mounts[0].split(",") if Mounts else []
                 Mounts = [Mount for Mount in Mounts if not re.match(r"^[0-9a-fA-F]{64}$", Mount)]  # Ignore hashes
                 containers.append((ID, Image, RunningFor.lower(), Mounts))
+        if not containers:
+            sys.exit("No containers are running.")
 
         # Ask whether to use a running container
         for ID, Image, RunningFor, Mounts in containers:
@@ -119,6 +125,7 @@ def main():
                 stdin = input(prompt)
                 if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
                     try:
+                        print(ports(ID))
                         login(ID)
                     except:
                         sys.exit(1)
@@ -126,7 +133,8 @@ def main():
                         sys.exit(0)
                 else:
                     break
-        sys.exit("No containers are running.")
+        else:
+            sys.exit(0)
 
     # Update image
     if not args["fast"]:
@@ -170,10 +178,24 @@ def main():
 
     # Mount directory in new container
     try:
+
+        # Create container
         columns, lines = shutil.get_terminal_size()  # Temporary
-        subprocess.check_call(["docker", "run"] + options + [image, "bash", "--login"],
-                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))  # Temporary
-    except subprocess.CalledProcessError:
+        command = " ".join([shlex.quote(arg) for arg in ["docker", "create"] + options + [image, "bash", "--login"]])
+        container = pexpect.run(command, env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines))).decode("utf-8").rstrip()
+
+        # Start container
+        child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container])
+
+        # Once running, list port mappings
+        child.expect(".*\$")
+        print(ports(container))
+
+        # Let user interact with container
+        print(child.after.decode("utf-8"), end="")
+        child.interact()
+
+    except (pexpect.exceptions.ExceptionPexpect, subprocess.CalledProcessError):
         sys.exit(1)
     else:
         sys.exit(0)
@@ -186,6 +208,7 @@ def handler(number, frame):
 
 
 def login(container):
+    """Log into container."""
     columns, lines = shutil.get_terminal_size()  # Temporary
     try:
         subprocess.check_call([
@@ -200,6 +223,16 @@ def login(container):
         ])
     except subprocess.CalledProcessError:
         raise RuntimeError() from None
+
+
+def ports(container):
+    """Return port mappings for container."""
+    return subprocess.check_output([
+        "docker", "ps",
+        "--filter", f"id={container}",
+        "--format", "{{.Ports}}",
+        "--no-trunc"
+    ]).decode("utf-8").rstrip()
 
 
 if __name__ == "__main__":
