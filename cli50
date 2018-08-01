@@ -135,8 +135,11 @@ def main():
         else:
             sys.exit(0)
 
-    # Update image
-    if not args["fast"]:
+    # Pull image if not found locally, autoupdate unless skipped
+    try:
+        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL) 
+        assert args["fast"]
+    except (AssertionError, subprocess.CalledProcessError):
         try:
             subprocess.check_call(["docker", "pull", image])
         except subprocess.CalledProcessError:
@@ -180,8 +183,8 @@ def main():
 
         # Create container
         columns, lines = shutil.get_terminal_size()  # Temporary
-        command = " ".join([shlex.quote(arg) for arg in ["docker", "create"] + options + [image, "bash", "--login"]])
-        container = pexpect.run(command, env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines))).decode("utf-8").rstrip()
+        container = subprocess.check_output(["docker", "create"] + options + [image, "bash", "--login"],
+                                            env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines))).decode("utf-8").rstrip()
 
         # Start container
         child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container])
