@@ -2,7 +2,7 @@
 
 import signal
 import sys
-signal.signal(signal.SIGINT, lambda signalnum, handler: sys.exit(1))
+signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import distutils.spawn
