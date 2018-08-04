@@ -185,11 +185,10 @@ def main():
 
         # Create container
         columns, lines = shutil.get_terminal_size()  # Temporary
-        container = subprocess.check_output(["docker", "create"] + options + [image, "bash", "--login"],
-                                            env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines))).decode("utf-8").rstrip()
+        container = subprocess.check_output(["docker", "create"] + options + [image, "bash", "--login"]).decode("utf-8").rstrip()
 
         # Start container
-        child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container])
+        child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container], dimensions=(lines, columns))
 
         # Once running, list port mappings
         child.expect(".*\$")
