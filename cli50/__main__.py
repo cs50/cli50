@@ -1,33 +1,25 @@
-#!/usr/bin/env python3
-
 import signal
 import sys
+
 signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
-import distutils.spawn
-import inflect
+import gettext
 import os
 import pexpect
 import pkg_resources
 import re
-import shlex 
+import shlex
 import shutil
 import subprocess
 
+import inflect
 
-# Require Python 3.6
-if sys.version_info < (3, 6):
-    sys.exit("CS50 CLI requires Python 3.6 or higher")
+from . import __version__
 
-# Get version
-try:
-    d = pkg_resources.get_distribution("cli50")
-except pkg_resources.DistributionNotFound:
-    __version__ = "UNKNOWN"
-else:
-    __version__ = d.version
-
+# Internationalization
+t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
+t.install()
 
 def main():
 
@@ -36,27 +28,23 @@ def main():
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--fast", action="store_true", help="skip autoupdate")
-    parser.add_argument("-g", "--git", action="store_true", help="mount .gitconfig")
-    parser.add_argument("-l", "--login", const=True, default=False, help="log into container",
+    parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
+    parser.add_argument("-g", "--git", action="store_true", help=_("mount .gitconfig"))
+    parser.add_argument("-l", "--login", const=True, default=False, help=_("log into container"),
                         metavar="CONTAINER", nargs="?")
-    parser.add_argument("-p", "--publish", action="append",
-                        help="publish port(s) to ports on host", metavar="LIST", nargs="?")
-    parser.add_argument("-P", "--publish-all", action="store_true",
-                        help="publish exposed ports to random ports on host")
-    parser.add_argument("-s", "--ssh", action="store_true", help="mount .ssh")
-    parser.add_argument("-S", "--stop", action="store_true", help="stop any containers")
+    parser.add_argument("-s", "--ssh", action="store_true", help=_("mount .ssh"))
+    parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default=None,
-                        help="start cs50/cli:TAG, else cs50/cli:latest", metavar="TAG")
+                        help=_("start cs50/cli:TAG, else cs50/cli:latest"), metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
-                        nargs="?", help="directory to mount, else $PWD")
+                        nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
 
     # Check for Docker
-    if not distutils.spawn.find_executable("docker"):
-        parser.error("Docker not installed.")
+    if not shutil.which("docker"):
+        parser.error(_("Docker not installed."))
 
     # Image to use
     image = f"cs50/cli:{args['tag']}" if args["tag"] else "cs50/cli"
@@ -80,7 +68,7 @@ def main():
     # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
-        parser.error(f"{args['directory']}: no such directory")
+        parser.error(_("{}: no such directory").format(args['directory']))
 
     # Log into container
     if args["login"]:
@@ -119,9 +107,9 @@ def main():
         # Ask whether to use a running container
         for ID, Image, RunningFor, Mounts in containers:
             while True:
-                prompt = f"Log into {Image}, started {RunningFor}"
+                prompt = _("Log into {}, started {}").format(Image, RunningFor)
                 if Mounts:
-                    prompt += " with " + inflect.engine().join(Mounts) + " mounted"
+                    prompt += _(" with {} mounted").format(inflect.engine().join(Mounts))
                 prompt += "? [Y] "
                 stdin = input(prompt)
                 if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
@@ -139,7 +127,7 @@ def main():
 
     # Pull image if not found locally, autoupdate unless skipped
     try:
-        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL) 
+        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL)
         assert args["fast"]
     except (AssertionError, subprocess.CalledProcessError):
         try:
@@ -149,35 +137,25 @@ def main():
 
     # Options
     options = ["--interactive",
+               "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
                "--volume", directory + ":/home/ubuntu/workspace",
                "--workdir", "/home/ubuntu/workspace"]
 
-    # Ports to publish
-    if isinstance(args["publish"], list):
-        if len(args["publish"]) == 1 and args["publish"][0] == None:  # If --publish without LIST
-            options += ["--publish", "8080:8080", "--publish", "8081:8081", "--publish", "8082:8082"]
-        else:  # If --publish with LIST
-            for port in args["publish"]:
-                if port:
-                    options += ["--publish", port]
-    if args["publish_all"]:
-        options += ["--publish-all"]
-
     # Mount ~/.gitconfig read-only, if exists
     if args["git"]:
         gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
         if not os.path.isfile(gitconfig):
-            sys.exit(f"{gitconfig}: no such directory")
+            sys.exit(_("{}: no such directory").format(gitconfig))
         options += ["--volume", f"{gitconfig}:/home/ubuntu/.gitconfig:ro"]
 
     # Mount ~/.ssh read-only, if exists
     if args["ssh"]:
         ssh = os.path.join(os.path.expanduser("~"), ".ssh")
         if not os.path.isdir(ssh):
-            sys.exit(f"{ssh}: no such directory")
+            sys.exit(_("{}: no such directory").format(ssh))
         options += ["--volume", f"{ssh}:/home/ubuntu/.ssh:ro"]
 
     # Mount directory in new container

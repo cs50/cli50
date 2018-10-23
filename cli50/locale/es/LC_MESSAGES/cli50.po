@@ -1,0 +1,64 @@
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: cli50.py:22
+msgid "CS50 CLI requires Python 3.6 or higher"
+msgstr "Necesitas Python 3.6 o una versión más reciente para usar CS50 CLI"
+
+#: cli50.py:39
+msgid "skip autoupdate"
+msgstr "evitar actualización automática"
+
+#: cli50.py:40
+msgid "mount .gitconfig"
+msgstr "montar .gitconfig"
+
+#: cli50.py:41
+msgid "log into container"
+msgstr "acceder al container via login"
+
+#: cli50.py:44
+msgid "publish port(s) to ports on host"
+msgstr "publicar port(s) a los ports del host"
+
+#: cli50.py:46
+msgid "publish exposed ports to random ports on host"
+msgstr "publicar ports expuestos a ports aleatorios del host"
+
+#: cli50.py:47
+msgid "mount .ssh"
+msgstr "montar .ssh"
+
+#: cli50.py:48
+msgid "stop any containers"
+msgstr "parar todos los containers"
+
+#: cli50.py:50
+msgid "start cs50/cli:TAG, else cs50/cli:latest"
+msgstr "iniciar cs50/cli:TAG, o alternativamente cs50/cli:latest"
+
+#: cli50.py:54
+msgid "directory to mount, else $PWD"
+msgstr "directorio para montar, o alternativamente $PWD"
+
+#: cli50.py:59
+msgid "Docker not installed."
+msgstr "Docker no está instalado"
+
+#: cli50.py:83
+#, python-format
+msgid "{}: no such directory"
+msgstr "{}: este directorio no existe"
+
+#: cli50.py:119
+#, python-format
+msgid "Log into {}, started {}"
+msgstr "Acceder {} via login, comenzar {}"
+
+#: cli50.py:121
+#, python-format
+msgid " with {} mounted"
+msgstr " con {} montado"

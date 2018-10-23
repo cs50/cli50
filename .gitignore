@@ -4,3 +4,6 @@
 !.travis.yml
 build/
 dist/
+__pycache__
+*.mo
+
