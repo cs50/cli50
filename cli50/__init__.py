@@ -1,17 +1,22 @@
-from pkg_resources import get_distribution, DistributionNotFound
 import os
+from pkg_resources import DistributionNotFound, get_distribution
 
-# https://stackoverflow.com/questions/17583443/what-is-the-correct-way-to-share-package-version-with-setup-py-and-the-package
+# https://stackoverflow.com/a/17638236/5156190
 try:
+
+    # Get package's distribution
     _dist = get_distribution("cli50")
-    # Normalize path for cross-OS compatibility.
+
+    # Normalize path for cross-OS compatibility
     _dist_loc = os.path.normcase(_dist.location)
     _here = os.path.normcase(__file__)
+
+    # This version is not installed, but another version is
     if not _here.startswith(os.path.join(_dist_loc, "cli50")):
-        # This version is not installed, but another version is.
         raise DistributionNotFound
+
 except DistributionNotFound:
-    __version__ = "locally installed, no version information available"
+    __version__ = "locally installed, version not available"
+
 else:
     __version__ = _dist.version
-
