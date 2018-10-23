@@ -1,5 +1,6 @@
 import signal
 import sys
+
 signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
@@ -18,7 +19,6 @@ from . import __version__
 
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
-print(t)
 t.install()
 
 def main():
@@ -32,10 +32,6 @@ def main():
     parser.add_argument("-g", "--git", action="store_true", help=_("mount .gitconfig"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into container"),
                         metavar="CONTAINER", nargs="?")
-    parser.add_argument("-p", "--publish", action="append",
-                        help=_("publish port(s) to ports on host"), metavar="LIST", nargs="?")
-    parser.add_argument("-P", "--publish-all", action="store_true",
-                        help=_("publish exposed ports to random ports on host"))
     parser.add_argument("-s", "--ssh", action="store_true", help=_("mount .ssh"))
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default=None,
@@ -141,22 +137,12 @@ def main():
 
     # Options
     options = ["--interactive",
+               "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
                "--volume", directory + ":/home/ubuntu/workspace",
                "--workdir", "/home/ubuntu/workspace"]
-
-    # Ports to publish
-    if isinstance(args["publish"], list):
-        if len(args["publish"]) == 1 and args["publish"][0] == None:  # If --publish without LIST
-            options += ["--publish", "8080:8080", "--publish", "8081:8081", "--publish", "8082:8082"]
-        else:  # If --publish with LIST
-            for port in args["publish"]:
-                if port:
-                    options += ["--publish", port]
-    if args["publish_all"]:
-        options += ["--publish-all"]
 
     # Mount ~/.gitconfig read-only, if exists
     if args["git"]:
