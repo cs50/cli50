@@ -29,13 +29,12 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
-    parser.add_argument("-g", "--git", action="store_true", help=_("mount .gitconfig"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into container"),
                         metavar="CONTAINER", nargs="?")
-    parser.add_argument("-s", "--ssh", action="store_true", help=_("mount .ssh"))
+    parser.add_argument("-d", "--dotfile", action="append", default=[],
+                        help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
-    parser.add_argument("-t", "--tag", default=None,
-                        help=_("start cs50/cli:TAG, else cs50/cli:latest"), metavar="TAG")
+    parser.add_argument("-t", "--tag", help=_("start cs50/cli:TAG, else cs50/cli:latest"), metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
@@ -144,19 +143,20 @@ def main():
                "--volume", directory + ":/home/ubuntu/workspace",
                "--workdir", "/home/ubuntu/workspace"]
 
-    # Mount ~/.gitconfig read-only, if exists
-    if args["git"]:
-        gitconfig = os.path.join(os.path.expanduser("~"), ".gitconfig")
-        if not os.path.isfile(gitconfig):
-            sys.exit(_("{}: no such directory").format(gitconfig))
-        options += ["--volume", f"{gitconfig}:/home/ubuntu/.gitconfig:ro"]
-
-    # Mount ~/.ssh read-only, if exists
-    if args["ssh"]:
-        ssh = os.path.join(os.path.expanduser("~"), ".ssh")
-        if not os.path.isdir(ssh):
-            sys.exit(_("{}: no such directory").format(ssh))
-        options += ["--volume", f"{ssh}:/home/ubuntu/.ssh:ro"]
+    # Mount each dotfile in user's $HOME read-only in container's $HOME
+    for dotfile in args["dotfile"]:
+        home = os.path.join(os.path.expanduser("~"), "")
+        if dotfile.startswith("/") and not dotfile.startswith(home):
+            sys.exit(_("{}: not in your $HOME").format(dotfile))
+        elif dotfile.startswith(os.path.join("~", "")):
+            dotfile = os.path.expanduser(dotfile)
+        else:
+            dotfile = os.path.join(home, dotfile)
+        if not os.path.exists(dotfile):
+            sys.exit(_("{}: No such file or directory").format(dotfile))
+        if not dotfile[len(home):].startswith("."):
+            sys.exit(_("{}: Not a dotfile").format(dotfile))
+        options += ["--volume", "{}:/home/ubuntu/{}:ro".format(dotfile, dotfile[len(home):])]
 
     # Mount directory in new container
     try:
