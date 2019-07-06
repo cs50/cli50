@@ -46,7 +46,7 @@ def main():
 
     # Check if Docker running
     try:
-        stdout = subprocess.check_call(["docker", "info"], stderr=subprocess.DEVNULL, timeout=10)
+        stdout = subprocess.check_call(["docker", "info"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, timeout=10)
     except subprocess.CalledProcessError:
         sys.exit("Docker not running.")
     except subprocess.TimeoutExpired:
@@ -176,7 +176,8 @@ def main():
         print(ports(container))
 
         # Let user interact with container
-        os.execlp("docker", "docker", "attach", container)
+        print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
+        os.execvp("docker", ["docker", "attach", container])
 
     except (subprocess.CalledProcessError, OSError):
         sys.exit(1)
