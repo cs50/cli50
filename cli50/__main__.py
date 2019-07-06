@@ -6,7 +6,6 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 import argparse
 import gettext
 import os
-import pexpect
 import pkg_resources
 import re
 import shlex
@@ -143,7 +142,8 @@ def main():
             sys.exit(1)
 
     # Options
-    options = ["--interactive",
+    options = ["--detach",
+               "--interactive",
                "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
@@ -169,26 +169,16 @@ def main():
     # Mount directory in new container
     try:
 
-        # Create container
-        columns, lines = shutil.get_terminal_size()  # Temporary
-        options += [ # Temporary
-            "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",
-            "--env", f"LINES={str(lines)}"]
-        container = subprocess.check_output(["docker", "create"] + options + [image, "bash", "--login"]).decode("utf-8").rstrip()
+        # Spawn container
+        container = subprocess.check_output(["docker", "run"] + options + [image, "bash", "--login"]).decode("utf-8").rstrip()
 
-        # Start container
-        child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container], dimensions=(lines, columns),
-                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))  # Temporary
-
-        # Once running, list port mappings
-        child.expect(".*\$")
+        # List port mappings
         print(ports(container))
 
         # Let user interact with container
-        print(child.after.decode("utf-8"), end="")
-        child.interact()
+        os.execlp("docker", "docker", "attach", container)
 
-    except (pexpect.exceptions.ExceptionPexpect, subprocess.CalledProcessError):
+    except (subprocess.CalledProcessError, OSError):
         sys.exit(1)
     else:
         sys.exit(0)
