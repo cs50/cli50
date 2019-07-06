@@ -14,7 +14,7 @@ setup(
     },
     description="This is CS50 CLI, with which you can mount a directory inside of an Ubuntu container.",
     license="GPLv3",
-    install_requires=["inflect"],
+    install_requires=["inflect", "requests"],
     keywords="cli50",
     name="cli50",
     python_requires=">=3.6",
