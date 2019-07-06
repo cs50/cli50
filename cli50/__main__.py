@@ -8,6 +8,7 @@ import gettext
 import os
 import pkg_resources
 import re
+import requests
 import shlex
 import shutil
 import subprocess
@@ -16,9 +17,13 @@ import inflect
 
 from . import __version__
 
+# Image to use
+IMAGE = "cs50/cli"
+
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
 t.install()
+
 
 def main():
 
@@ -33,7 +38,7 @@ def main():
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
-    parser.add_argument("-t", "--tag", help=_("start cs50/cli:TAG, else cs50/cli:latest"), metavar="TAG")
+    parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
@@ -52,8 +57,8 @@ def main():
     except subprocess.TimeoutExpired:
         sys.exit("Docker not responding.")
 
-    # Image to use
-    image = f"cs50/cli:{args['tag']}" if args["tag"] else "cs50/cli"
+    # Reference to use
+    reference = f"{IMAGE}:{args['tag']}"
 
     # Stop containers
     if args["stop"]:
@@ -131,15 +136,31 @@ def main():
         else:
             sys.exit(0)
 
-    # Pull image if not found locally, autoupdate unless skipped
-    try:
-        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL)
-        assert args["fast"]
-    except (AssertionError, subprocess.CalledProcessError):
+    # If autoupdating
+    if not args["fast"]:
         try:
-            subprocess.check_call(["docker", "pull", image])
-        except subprocess.CalledProcessError:
-            sys.exit(1)
+
+            # Get digest of local image, if any
+            digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{reference}"],
+                                             stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
+
+            # Get digest of latest image
+            # https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
+            # https://stackoverflow.com/a/35420411/5156190
+            response = requests.get(f"https://auth.docker.io/token?scope=repository:{IMAGE}:pull&service=registry.docker.io")
+            token = response.json()["token"]
+            response = requests.get(f"https://registry-1.docker.io/v2/{IMAGE}/manifests/{args['tag']}", headers={
+                "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+                "Authorization": f"Bearer {token}"})
+
+            # Pull latest if digests don't match
+            assert digest == f"{IMAGE}@{response.headers['Docker-Content-Digest']}"
+
+        except (AssertionError, subprocess.CalledProcessError):
+            try:
+                subprocess.check_call(["docker", "pull", reference])
+            except subprocess.CalledProcessError:
+                sys.exit(1)
 
     # Options
     options = ["--detach",
@@ -170,7 +191,7 @@ def main():
     try:
 
         # Spawn container
-        container = subprocess.check_output(["docker", "run"] + options + [image, "bash", "--login"]).decode("utf-8").rstrip()
+        container = subprocess.check_output(["docker", "run"] + options + [reference, "bash", "--login"]).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
