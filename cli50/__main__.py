@@ -41,9 +41,17 @@ def main():
                         nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
 
-    # Check for Docker
+    # Check if Docker installed
     if not shutil.which("docker"):
         parser.error(_("Docker not installed."))
+
+    # Check if Docker running
+    try:
+        stdout = subprocess.check_call(["docker", "info"], stderr=subprocess.DEVNULL, timeout=10)
+    except subprocess.CalledProcessError:
+        sys.exit("Docker not running.")
+    except subprocess.TimeoutExpired:
+        sys.exit("Docker not responding.")
 
     # Image to use
     image = f"cs50/cli:{args['tag']}" if args["tag"] else "cs50/cli"
