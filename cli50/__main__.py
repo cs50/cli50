@@ -6,9 +6,9 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 import argparse
 import gettext
 import os
-import pexpect
 import pkg_resources
 import re
+import requests
 import shlex
 import shutil
 import subprocess
@@ -17,9 +17,13 @@ import inflect
 
 from . import __version__
 
+# Image to use
+IMAGE = "cs50/cli"
+
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
 t.install()
+
 
 def main():
 
@@ -34,19 +38,27 @@ def main():
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
-    parser.add_argument("-t", "--tag", help=_("start cs50/cli:TAG, else cs50/cli:latest"), metavar="TAG")
+    parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
                         nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
 
-    # Check for Docker
+    # Check if Docker installed
     if not shutil.which("docker"):
         parser.error(_("Docker not installed."))
 
-    # Image to use
-    image = f"cs50/cli:{args['tag']}" if args["tag"] else "cs50/cli"
+    # Check if Docker running
+    try:
+        stdout = subprocess.check_call(["docker", "info"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, timeout=10)
+    except subprocess.CalledProcessError:
+        sys.exit("Docker not running.")
+    except subprocess.TimeoutExpired:
+        sys.exit("Docker not responding.")
+
+    # Reference to use
+    reference = f"{IMAGE}:{args['tag']}"
 
     # Stop containers
     if args["stop"]:
@@ -124,18 +136,35 @@ def main():
         else:
             sys.exit(0)
 
-    # Pull image if not found locally, autoupdate unless skipped
-    try:
-        subprocess.check_call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL)
-        assert args["fast"]
-    except (AssertionError, subprocess.CalledProcessError):
+    # If autoupdating
+    if not args["fast"]:
         try:
-            subprocess.check_call(["docker", "pull", image])
-        except subprocess.CalledProcessError:
-            sys.exit(1)
+
+            # Get digest of local image, if any
+            digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{reference}"],
+                                             stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
+
+            # Get digest of latest image
+            # https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
+            # https://stackoverflow.com/a/35420411/5156190
+            response = requests.get(f"https://auth.docker.io/token?scope=repository:{IMAGE}:pull&service=registry.docker.io")
+            token = response.json()["token"]
+            response = requests.get(f"https://registry-1.docker.io/v2/{IMAGE}/manifests/{args['tag']}", headers={
+                "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+                "Authorization": f"Bearer {token}"})
+
+            # Pull latest if digests don't match
+            assert digest == f"{IMAGE}@{response.headers['Docker-Content-Digest']}"
+
+        except (AssertionError, subprocess.CalledProcessError):
+            try:
+                subprocess.check_call(["docker", "pull", reference])
+            except subprocess.CalledProcessError:
+                sys.exit(1)
 
     # Options
-    options = ["--interactive",
+    options = ["--detach",
+               "--interactive",
                "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
@@ -161,26 +190,17 @@ def main():
     # Mount directory in new container
     try:
 
-        # Create container
-        columns, lines = shutil.get_terminal_size()  # Temporary
-        options += [ # Temporary
-            "--env", f"COLUMNS={str(columns)},LINES={str(lines)}",
-            "--env", f"LINES={str(lines)}"]
-        container = subprocess.check_output(["docker", "create"] + options + [image, "bash", "--login"]).decode("utf-8").rstrip()
+        # Spawn container
+        container = subprocess.check_output(["docker", "run"] + options + [reference, "bash", "--login"]).decode("utf-8").rstrip()
 
-        # Start container
-        child = pexpect.spawn("docker", ["start", "--attach", "--interactive", container], dimensions=(lines, columns),
-                              env=dict(os.environ, COLUMNS=str(columns), LINES=str(lines)))  # Temporary
-
-        # Once running, list port mappings
-        child.expect(".*\$")
+        # List port mappings
         print(ports(container))
 
         # Let user interact with container
-        print(child.after.decode("utf-8"), end="")
-        child.interact()
+        print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
+        os.execvp("docker", ["docker", "attach", container])
 
-    except (pexpect.exceptions.ExceptionPexpect, subprocess.CalledProcessError):
+    except (subprocess.CalledProcessError, OSError):
         sys.exit(1)
     else:
         sys.exit(0)
