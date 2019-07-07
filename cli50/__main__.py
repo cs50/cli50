@@ -32,17 +32,14 @@ def main():
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
-    parser.add_argument("-l", "--login", const=True, default=False, help=_("log into container"),
-                        metavar="CONTAINER", nargs="?")
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
+    parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
+    parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
-    parser.add_argument("-V", "--version", action="version",
-                        version="%(prog)s {}".format(__version__))
-    parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY",
-                        nargs="?", help=_("directory to mount, else $PWD"))
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__))
+    parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
 
     # Check if Docker installed
@@ -169,8 +166,8 @@ def main():
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
-               "--volume", directory + ":/home/ubuntu/workspace",
-               "--workdir", "/home/ubuntu/workspace"]
+               "--volume", directory + ":/mnt",
+               "--workdir", "/mnt"]
 
     # Mount each dotfile in user's $HOME read-only in container's $HOME
     for dotfile in args["dotfile"]:
