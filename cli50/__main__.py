@@ -169,8 +169,8 @@ def main():
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
                "--tty",
-               "--volume", directory + ":/home/ubuntu/workspace",
-               "--workdir", "/home/ubuntu/workspace"]
+               "--volume", directory + ":/mnt",
+               "--workdir", "/mnt"]
 
     # Mount each dotfile in user's $HOME read-only in container's $HOME
     for dotfile in args["dotfile"]:
