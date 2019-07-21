@@ -195,9 +195,9 @@ def main():
 
         # Let user interact with container
         print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
-        os.execvp("docker", ["docker", "attach", container])
+        subprocess.call(["docker", "attach", container])
 
-    except (subprocess.CalledProcessError, OSError):
+    except (subprocess.CalledProcessError):
         sys.exit(1)
     else:
         sys.exit(0)
