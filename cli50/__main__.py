@@ -54,6 +54,19 @@ def main():
     except subprocess.TimeoutExpired:
         sys.exit("Docker not responding.")
 
+    # Check for newer version
+    try:
+        latest = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"])
+        assert latest <= __version__
+    except requests.RequestException:
+        pass
+    except AssertionError:
+        print(
+            "You are using cli50 version {}, however version {} is available.".format(__version__, latest),
+            "You should consider upgrading via the 'pip3 install --upgrade cli50' command.",
+            sep='\n'
+        )
+
     # Reference to use
     reference = f"{IMAGE}:{args['tag']}"
 
