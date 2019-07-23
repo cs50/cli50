@@ -16,7 +16,7 @@ try:
         raise DistributionNotFound
 
 except DistributionNotFound:
-    __version__ = "locally installed, version not available"
+    __version__ = None
 
 else:
     __version__ = _dist.version

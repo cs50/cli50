@@ -38,9 +38,19 @@ def main():
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__))
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
+
+    # Check for newer version
+    if not args["fast"] and __version__:
+        try:
+            latest = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=pkg_resources.parse_version)
+            assert latest <= __version__
+        except requests.RequestException:
+            pass
+        except AssertionError:
+            print(_("A newer version is available. Run `pip3 install --upgrade cli50` to upgrade."))
 
     # Check if Docker installed
     if not shutil.which("docker"):
@@ -133,7 +143,7 @@ def main():
         else:
             sys.exit(0)
 
-    # If autoupdating
+    # Check for newer image
     if not args["fast"]:
         try:
 
