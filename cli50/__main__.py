@@ -57,7 +57,7 @@ def main():
     # Check for newer version
     try:
         latest = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"])
-        assert latest <= __version__
+        assert pkg_resources.parse_version(latest) <= pkg_resources.parse_version(__version__)
     except requests.RequestException:
         pass
     except AssertionError:
