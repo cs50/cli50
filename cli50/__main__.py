@@ -61,11 +61,7 @@ def main():
     except requests.RequestException:
         pass
     except AssertionError:
-        print(
-            "You are using cli50 version {}, however version {} is available.".format(__version__, latest),
-            "You should consider upgrading via the 'pip3 install --upgrade cli50' command.",
-            sep='\n'
-        )
+        print(_("A newer version of cli50 is available."))
 
     # Reference to use
     reference = f"{IMAGE}:{args['tag']}"
