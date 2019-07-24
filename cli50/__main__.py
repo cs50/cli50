@@ -163,11 +163,15 @@ def main():
             # Pull latest if digests don't match
             assert digest == f"{IMAGE}@{response.headers['Docker-Content-Digest']}"
 
-        except (AssertionError, subprocess.CalledProcessError):
+        except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
+
+            # Pull image
             try:
-                subprocess.check_call(["docker", "pull", reference])
+                subprocess.check_call(["docker", "pull", reference], stderr=subprocess.DEVNULL)
+
+            # But don't prevent usage if pull fails (e.g., because no internet)
             except subprocess.CalledProcessError:
-                sys.exit(1)
+                pass
 
     # Options
     options = ["--detach",
@@ -207,7 +211,7 @@ def main():
         print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
         subprocess.call(["docker", "attach", container])
 
-    except (subprocess.CalledProcessError):
+    except subprocess.CalledProcessError:
         sys.exit(1)
     else:
         sys.exit(0)
