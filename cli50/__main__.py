@@ -178,7 +178,7 @@ def main():
                "--interactive",
                "--publish-all",
                "--rm",
-               "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527
+               "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
                "--volume", directory + ":/mnt",
                "--workdir", "/mnt"]
