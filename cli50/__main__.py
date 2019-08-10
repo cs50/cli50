@@ -38,6 +38,7 @@ def main():
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
+    parser.add_argument("-u", "--update", action="store_true", help=_("update only"))
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
@@ -52,6 +53,10 @@ def main():
         except AssertionError:
             print(_("A newer version is available. Run `pip3 install --upgrade cli50` to upgrade."))
 
+    # Mutually exclusive arguments
+    if args["fast"] and args["update"]:
+        sys.exit("Cannot use -f/--fast and -u/--update together.")
+
     # Check if Docker installed
     if not shutil.which("docker"):
         parser.error(_("Docker not installed."))
@@ -63,30 +68,6 @@ def main():
         sys.exit("Docker not running.")
     except subprocess.TimeoutExpired:
         sys.exit("Docker not responding.")
-
-    # Reference to use
-    reference = f"{IMAGE}:{args['tag']}"
-
-    # Stop containers
-    if args["stop"]:
-        try:
-            stdout = subprocess.check_output([
-                "docker", "ps",
-                "--all",
-                "--format", "{{.ID}}\t{{.Image}}"
-            ]).decode("utf-8")
-            for line in stdout.rstrip().splitlines():
-                ID, Image = line.split("\t")
-                if Image == image:
-                    subprocess.check_call(["docker", "stop", "--time", "0", ID])
-            sys.exit(0)
-        except subprocess.CalledProcessError:
-            sys.exit(1)
-
-    # Ensure directory exists
-    directory = os.path.realpath(args["directory"])
-    if not os.path.isdir(directory):
-        parser.error(_("{}: no such directory").format(args['directory']))
 
     # Log into container
     if args["login"]:
@@ -143,35 +124,35 @@ def main():
         else:
             sys.exit(0)
 
+    # Stop containers
+    if args["stop"]:
+        try:
+            stdout = subprocess.check_output([
+                "docker", "ps",
+                "--all",
+                "--format", "{{.ID}}\t{{.Image}}"
+            ]).decode("utf-8")
+            for line in stdout.rstrip().splitlines():
+                ID, Image = line.split("\t")
+                if Image == IMAGE:
+                    subprocess.check_call(["docker", "stop", "--time", "0", ID])
+            sys.exit(0)
+        except subprocess.CalledProcessError:
+            sys.exit(1)
+
+    # Update only
+    if args["update"]:
+        pull(IMAGE, args["tag"])
+        sys.exit(0)
+
+    # Ensure directory exists
+    directory = os.path.realpath(args["directory"])
+    if not os.path.isdir(directory):
+        parser.error(_("{}: no such directory").format(args['directory']))
+
     # Check for newer image
     if not args["fast"]:
-        try:
-
-            # Get digest of local image, if any
-            digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{reference}"],
-                                             stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
-
-            # Get digest of latest image
-            # https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
-            # https://stackoverflow.com/a/35420411/5156190
-            response = requests.get(f"https://auth.docker.io/token?scope=repository:{IMAGE}:pull&service=registry.docker.io")
-            token = response.json()["token"]
-            response = requests.get(f"https://registry-1.docker.io/v2/{IMAGE}/manifests/{args['tag']}", headers={
-                "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-                "Authorization": f"Bearer {token}"})
-
-            # Pull latest if digests don't match
-            assert digest == f"{IMAGE}@{response.headers['Docker-Content-Digest']}"
-
-        except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
-
-            # Pull image
-            try:
-                subprocess.check_call(["docker", "pull", reference], stderr=subprocess.DEVNULL)
-
-            # But don't prevent usage if pull fails (e.g., because no internet)
-            except subprocess.CalledProcessError:
-                pass
+        pull(IMAGE, args["tag"])
 
     # Options
     options = ["--detach",
@@ -202,7 +183,7 @@ def main():
     try:
 
         # Spawn container
-        container = subprocess.check_output(["docker", "run"] + options + [reference, "bash", "--login"]).decode("utf-8").rstrip()
+        container = subprocess.check_output(["docker", "run"] + options + [f"{IMAGE}:{args['tag']}", "bash", "--login"]).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
@@ -249,6 +230,37 @@ def ports(container):
         "--format", "{{.Ports}}",
         "--no-trunc"
     ]).decode("utf-8").rstrip()
+
+
+def pull(image, tag):
+    """Pull image as needed."""
+    try:
+
+        # Get digest of local image, if any
+        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{IMAGE}:{tag}"],
+                                         stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
+
+        # Get digest of latest image
+        # https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
+        # https://stackoverflow.com/a/35420411/5156190
+        response = requests.get(f"https://auth.docker.io/token?scope=repository:{image}:pull&service=registry.docker.io")
+        token = response.json()["token"]
+        response = requests.get(f"https://registry-1.docker.io/v2/{image}/manifests/{tag}", headers={
+            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+            "Authorization": f"Bearer {token}"})
+
+        # Pull latest if digests don't match
+        assert digest == f"{image}@{response.headers['Docker-Content-Digest']}"
+
+    except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
+
+        # Pull image
+        try:
+            subprocess.check_call(["docker", "pull", f"{IMAGE}:{tag}"], stderr=subprocess.DEVNULL)
+
+        # But don't prevent usage if pull fails (e.g., because no internet)
+        except subprocess.CalledProcessError:
+            pass
 
 
 if __name__ == "__main__":
