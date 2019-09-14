@@ -35,6 +35,7 @@ def main():
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
+    parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
@@ -179,11 +180,18 @@ def main():
             sys.exit(_("{}: Not a dotfile").format(dotfile))
         options += ["--volume", "{}:/home/ubuntu/{}:ro".format(dotfile, dotfile[len(home):])]
 
+    # Default CMD
+    cmd = ["bash", "--login"]
+
+    # Serve Jekyll site
+    if args["jekyll"]:
+        cmd += ["-c", "bundle install && bundle exec jekyll serve --host 0.0.0.0 --port 8080"]
+
     # Mount directory in new container
     try:
 
         # Spawn container
-        container = subprocess.check_output(["docker", "run"] + options + [f"{IMAGE}:{args['tag']}", "bash", "--login"]).decode("utf-8").rstrip()
+        container = subprocess.check_output(["docker", "run"] + options + [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
