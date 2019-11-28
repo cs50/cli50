@@ -158,7 +158,6 @@ def main():
     # Options
     options = ["--detach",
                "--interactive",
-               "--publish-all",
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
@@ -191,7 +190,20 @@ def main():
     try:
 
         # Spawn container
-        container = subprocess.check_output(["docker", "run"] + options + [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
+        try:
+
+            # Publish container's ports to the host
+            publish = []
+            for port in [8080, 8081, 8082]:
+                publish += ["--publish", f"{port}:{port}"]
+            container = subprocess.check_output(["docker", "run"] + options + publish +
+                                                [f"{IMAGE}:{args['tag']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
+
+        except subprocess.CalledProcessError:
+
+            # Publish all exposed ports to random ports
+            container = subprocess.check_output(["docker", "run"] + options + ["--publish-all"] +
+                                                [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
