@@ -193,16 +193,16 @@ def main():
         try:
 
             # Publish container's ports to the host
-            publish = []
-            for port in [8080, 8081, 8082]:
-                publish += ["--publish", f"{port}:{port}"]
-            container = subprocess.check_output(["docker", "run"] + options + publish +
+            # https://stackoverflow.com/a/952952/5156190
+            container = subprocess.check_output(["docker", "run"] + options +
+                                                [item for sublist in [['--publish', f'{port}:{port}'] for port in (8080, 8081, 8082)] for item in sublist] +
                                                 [f"{IMAGE}:{args['tag']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
 
         except subprocess.CalledProcessError:
 
             # Publish all exposed ports to random ports
-            container = subprocess.check_output(["docker", "run"] + options + ["--publish-all"] +
+            container = subprocess.check_output(["docker", "run"] + options +
+                                                ["--publish-all"] +
                                                 [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
         # List port mappings
