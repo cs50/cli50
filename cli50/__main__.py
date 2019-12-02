@@ -89,7 +89,7 @@ def main():
                 "docker", "ps",
                 "--all",
                 "--filter", "status=running",
-                "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Mounts}}",
+                "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}\t{{.Mounts}}",
                 "--no-trunc"
             ]).decode("utf-8")
         except subprocess.CalledProcessError:
@@ -97,17 +97,17 @@ def main():
         else:
             containers = []
             for line in stdout.rstrip().splitlines():
-                ID, Image, RunningFor, *Mounts = line.split("\t")
+                ID, Image, RunningFor, Status, *Mounts = line.split("\t")
                 Mounts = Mounts[0].split(",") if Mounts else []
                 Mounts = [Mount for Mount in Mounts if not re.match(r"^[0-9a-fA-F]{64}$", Mount)]  # Ignore hashes
-                containers.append((ID, Image, RunningFor.lower(), Mounts))
+                containers.append((ID, Image, RunningFor.lower(), Status.lower(), Mounts))
         if not containers:
             sys.exit("No containers are running.")
 
         # Ask whether to use a running container
-        for ID, Image, RunningFor, Mounts in containers:
+        for ID, Image, RunningFor, Status, Mounts in containers:
             while True:
-                prompt = _("Log into {}, started {}").format(Image, RunningFor)
+                prompt = _("Log into {}, created {}, {},").format(Image, RunningFor, Status)
                 if Mounts:
                     prompt += _(" with {} mounted").format(inflect.engine().join(Mounts))
                 prompt += "? [Y] "
