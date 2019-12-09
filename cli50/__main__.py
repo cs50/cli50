@@ -269,12 +269,7 @@ def pull(image, tag):
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
         # Pull image
-        try:
-            subprocess.check_call(["docker", "pull", f"{IMAGE}:{tag}"], stderr=subprocess.DEVNULL)
-
-        # But don't prevent usage if pull fails (e.g., because no internet)
-        except subprocess.CalledProcessError:
-            pass
+        subprocess.call(["docker", "pull", f"{IMAGE}:{tag}"], stderr=subprocess.DEVNULL)
 
 
 if __name__ == "__main__":
