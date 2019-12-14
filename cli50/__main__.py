@@ -257,30 +257,20 @@ def pull(image, tag):
     try:
 
         # Get digest of local image, if any
-        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{IMAGE}:{tag}"],
+        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{image}:{tag}"],
                                          stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
 
         # Get digest of latest image
-        # https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
-        # https://stackoverflow.com/a/35420411/5156190
-        response = requests.get(f"https://auth.docker.io/token?scope=repository:{image}:pull&service=registry.docker.io")
-        token = response.json()["token"]
-        response = requests.get(f"https://registry-1.docker.io/v2/{image}/manifests/{tag}", headers={
-            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-            "Authorization": f"Bearer {token}"})
+        # https://stackoverflow.com/a/50945459/5156190
+        response = requests.get(f"https://hub.docker.com/v2/repositories/{image}/tags/{tag}").json()["images"][0]
 
         # Pull latest if digests don't match
-        assert digest == f"{image}@{response.headers['Docker-Content-Digest']}"
+        assert digest == f"{image}@{response['digest']}"
 
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
         # Pull image
-        try:
-            subprocess.check_call(["docker", "pull", f"{IMAGE}:{tag}"], stderr=subprocess.DEVNULL)
-
-        # But don't prevent usage if pull fails (e.g., because no internet)
-        except subprocess.CalledProcessError:
-            pass
+        subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
 
 
 if __name__ == "__main__":
