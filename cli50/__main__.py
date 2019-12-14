@@ -270,7 +270,7 @@ def pull(image, tag):
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
         # Pull image
-        subprocess.call(["docker", "pull", f"{IMAGE}:{tag}"], stderr=subprocess.DEVNULL)
+        subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
 
 
 if __name__ == "__main__":
