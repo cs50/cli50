@@ -261,10 +261,11 @@ def pull(image, tag):
                                          stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
 
         # Get digest of latest image
+        # https://stackoverflow.com/a/50945459/5156190
         response = requests.get(f"https://hub.docker.com/v2/repositories/{image}/tags/{tag}").json()["images"][0]
 
         # Pull latest if digests don't match
-        assert digest == f"""{image}@{response["digest"]}"""
+        assert digest == f"{image}@{response['digest']}"
 
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
