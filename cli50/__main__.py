@@ -35,7 +35,7 @@ def main():
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
-    parser.add_argument("-i", "--image", default=IMAGE, help=_("start IMAGE, else {}:latest").format(IMAGE), metavar="IMAGE")
+    parser.add_argument("-i", "--image", default=IMAGE, help=_("start IMAGE, else {}").format(IMAGE), metavar="IMAGE")
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
