@@ -265,7 +265,6 @@ def pull(image):
         repository, tag = image.split(":") if ":" in image else image, "latest"
         if "/" not in repository:
             repository = "library/" + repository
-        print(f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}")
         response = requests.get(f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}").json()["images"][0]
 
         # Pull latest if digests don't match
