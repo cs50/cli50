@@ -35,10 +35,10 @@ def main():
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
+    parser.add_argument("-i", "--image", default=IMAGE, help=_("start IMAGE, else {}:latest").format(IMAGE), metavar="IMAGE")
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
-    parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
     parser.add_argument("-u", "--update", action="store_true", help=_("update only"))
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
@@ -143,7 +143,7 @@ def main():
 
     # Update only
     if args["update"]:
-        pull(IMAGE, args["tag"])
+        pull(args["image"])
         sys.exit(0)
 
     # Ensure directory exists
@@ -153,7 +153,7 @@ def main():
 
     # Check for newer image
     if not args["fast"]:
-        pull(IMAGE, args["tag"])
+        pull(args["image"])
 
     # Options
     options = ["--detach",
@@ -196,14 +196,14 @@ def main():
             # https://stackoverflow.com/a/952952/5156190
             container = subprocess.check_output(["docker", "run"] + options +
                                                 [item for sublist in [['--publish', f'{port}:{port}'] for port in (8080, 8081, 8082)] for item in sublist] +
-                                                [f"{IMAGE}:{args['tag']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
+                                                [f"{args['image']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
 
         except subprocess.CalledProcessError:
 
             # Publish all exposed ports to random ports
             container = subprocess.check_output(["docker", "run"] + options +
                                                 ["--publish-all"] +
-                                                [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
+                                                [f"{args['image']}"] + cmd).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
@@ -252,25 +252,29 @@ def ports(container):
     ]).decode("utf-8").rstrip()
 
 
-def pull(image, tag):
+def pull(image):
     """Pull image as needed."""
     try:
 
         # Get digest of local image, if any
-        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{image}:{tag}"],
+        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", image],
                                          stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
 
         # Get digest of latest image
         # https://stackoverflow.com/a/50945459/5156190
-        response = requests.get(f"https://hub.docker.com/v2/repositories/{image}/tags/{tag}").json()["images"][0]
+        repository, tag = image.split(":") if ":" in image else image, "latest"
+        if "/" not in repository:
+            repository = "library/" + repository
+        print(f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}")
+        response = requests.get(f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}").json()["images"][0]
 
         # Pull latest if digests don't match
-        assert digest == f"{image}@{response['digest']}"
+        assert digest == f"{repository}@{response['digest']}"
 
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
         # Pull image
-        subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
+        subprocess.call(["docker", "pull", image], stderr=subprocess.DEVNULL)
 
 
 if __name__ == "__main__":
