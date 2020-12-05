@@ -19,6 +19,7 @@ from . import __version__
 
 # Image to use
 IMAGE = "cs50/cli"
+LABEL = "cli50"
 
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
@@ -88,7 +89,7 @@ def main():
             stdout = subprocess.check_output([
                 "docker", "ps",
                 "--all",
-                "--filter", "status=running",
+                "--filter", f"label={LABEL}", "status=running",
                 "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}\t{{.Mounts}}",
                 "--no-trunc"
             ]).decode("utf-8")
@@ -131,12 +132,13 @@ def main():
             stdout = subprocess.check_output([
                 "docker", "ps",
                 "--all",
-                "--format", "{{.ID}}\t{{.Image}}"
+                "--filter", f"label={LABEL}",
+                "--format", "{{.ID}}"
             ]).decode("utf-8")
-            for line in stdout.rstrip().splitlines():
-                ID, Image = line.split("\t")
-                if Image == IMAGE:
-                    subprocess.check_call(["docker", "stop", "--time", "0", ID])
+
+            for ID in stdout.rstrip().splitlines():
+                subprocess.check_call(["docker", "stop", "--time", "0", ID])
+
             sys.exit(0)
         except subprocess.CalledProcessError:
             sys.exit(1)
@@ -158,6 +160,7 @@ def main():
     # Options
     options = ["--detach",
                "--interactive",
+               "--label", LABEL,
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
