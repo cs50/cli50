@@ -157,6 +157,12 @@ def main():
     if not args["fast"]:
         pull(args["image"])
 
+    # Home directory
+    home = os.path.join(os.path.expanduser("~"), "")
+
+    # Working directory
+    workdir = os.path.join(home, "workspace")
+
     # Options
     options = ["--detach",
                "--interactive",
@@ -164,12 +170,11 @@ def main():
                "--rm",
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
-               "--volume", directory + ":/mnt",
-               "--workdir", "/mnt"]
+               "--volume", directory + ":" + workdir,
+               "--workdir", workdir]
 
     # Mount each dotfile in user's $HOME read-only in container's $HOME
     for dotfile in args["dotfile"]:
-        home = os.path.join(os.path.expanduser("~"), "")
         if dotfile.startswith("/") and not dotfile.startswith(home):
             sys.exit(_("{}: not in your $HOME").format(dotfile))
         elif dotfile.startswith(os.path.join("~", "")):
