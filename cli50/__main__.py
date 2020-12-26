@@ -102,7 +102,7 @@ def main():
             for line in stdout.rstrip().splitlines():
                 ID, Image, RunningFor, Status, *Mounts = line.split("\t")
                 Mounts = Mounts[0].split(",") if Mounts else []
-                Mounts = [Mount for Mount in Mounts if not re.match(r"^[0-9a-fA-F]{64}$", Mount)]  # Ignore hashes
+                Mounts = [re.sub(r"^/host_mnt", "", Mount) for Mount in Mounts if not re.match(r"^[0-9a-fA-F]{64}$", Mount)]  # Ignore hashes
                 containers.append((ID, Image, RunningFor.lower(), Status.lower(), Mounts))
         if not containers:
             sys.exit("No containers are running.")
