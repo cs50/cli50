@@ -89,7 +89,8 @@ def main():
             stdout = subprocess.check_output([
                 "docker", "ps",
                 "--all",
-                "--filter", f"label={LABEL}", "status=running",
+                "--filter", f"label={LABEL}",
+                "--filter", "status=running",
                 "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}\t{{.Mounts}}",
                 "--no-trunc"
             ]).decode("utf-8")
@@ -112,7 +113,10 @@ def main():
                 if Mounts:
                     prompt += _(" with {} mounted").format(inflect.engine().join(Mounts))
                 prompt += "? [Y] "
-                stdin = input(prompt)
+                try:
+                    stdin = input(prompt)
+                except EOFError:
+                    break
                 if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
                     try:
                         print(ports(ID))
