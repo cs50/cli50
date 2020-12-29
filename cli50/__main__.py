@@ -20,6 +20,8 @@ from . import __version__
 
 # Image to use
 IMAGE = "cs50/cli"
+
+# Label to use
 LABEL = "cli50"
 
 # Internationalization
@@ -90,7 +92,6 @@ def main():
             stdout = subprocess.check_output([
                 "docker", "ps",
                 "--all",
-                "--filter", f"label={LABEL}",
                 "--filter", "status=running",
                 "--format", "{{.ID}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}\t{{.Mounts}}",
                 "--no-trunc"
