@@ -165,13 +165,8 @@ def main():
     if not args["fast"]:
         pull(IMAGE, args["tag"])
 
-    # Home directory
-    home = os.path.join(os.path.expanduser("~"), "")
-
-    # Working directory
-    workdir = os.path.join(home, "workspace")
-
     # Options
+    workdir = "/home/ubuntu/workspace"
     options = ["--detach",
                "--interactive",
                "--label", LABEL,
@@ -180,6 +175,9 @@ def main():
                "--tty",
                "--volume", directory + ":" + workdir,
                "--workdir", workdir]
+
+    # Home directory
+    home = os.path.join(os.path.expanduser("~"), "")
 
     # Mount each dotfile in user's $HOME read-only in container's $HOME
     for dotfile in args["dotfile"]:
