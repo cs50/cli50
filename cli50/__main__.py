@@ -166,7 +166,7 @@ def main():
         pull(IMAGE, args["tag"])
 
     # Options
-    workdir = "/home/ubuntu/workspace"
+    workdir = "/mnt"
     options = ["--detach",
                "--interactive",
                "--label", LABEL,
