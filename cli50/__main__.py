@@ -259,12 +259,18 @@ def login(container):
 
 def ports(container):
     """Return port mappings for container."""
-    return subprocess.check_output([
+
+    # Get mappings
+    output = subprocess.check_output([
         "docker", "ps",
         "--filter", f"id={container}",
         "--format", "{{.Ports}}",
         "--no-trunc"
     ]).decode("utf-8").rstrip()
+
+    # Filter out IPv6 mappings as unneeded
+    mappings = list(filter(lambda mapping: not mapping.startswith(":::"), re.split(r", ", output)))
+    return ", ".join(mappings)
 
 
 def pull(image, tag):
