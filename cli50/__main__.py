@@ -24,6 +24,9 @@ IMAGE = "cs50/cli"
 # Label to use
 LABEL = "cli50"
 
+# Tag to use
+TAG = "minimal"
+
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
 t.install()
@@ -42,7 +45,7 @@ def main():
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
-    parser.add_argument("-t", "--tag", default="latest", help=_("start {}:TAG, else {}:latest").format(IMAGE, IMAGE), metavar="TAG")
+    parser.add_argument("-t", "--tag", default=TAG, help=_("start {}:TAG, else {}:{}").format(IMAGE, IMAGE, TAG), metavar="TAG")
     parser.add_argument("-u", "--update", action="store_true", help=_("update only"))
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
