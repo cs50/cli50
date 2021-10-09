@@ -44,7 +44,6 @@ def main():
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
-    parser.add_argument("-p", "--pull", action="store_true", help=_("pull image before creating container"))
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default=TAG, help=_("start {}:TAG, else {}:{}").format(IMAGE, IMAGE, TAG), metavar="TAG")
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
@@ -161,23 +160,20 @@ def main():
         parser.error(_("{}: no such directory").format(args['directory']))
 
     # Check Docker Hub for newer image
-    if args["pull"]:
-        pull(IMAGE, args["tag"])
-    else:
+    try:
+        digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
+        RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
+        assert f"{IMAGE}@{digest}" == RepoDigest
+    except (requests.RequestException, subprocess.CalledProcessError):
+        pass
+    except AssertionError:
         try:
-            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
-            RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
-            assert f"{IMAGE}@{digest}" == RepoDigest
-        except (requests.RequestException, subprocess.CalledProcessError):
+            response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
+        except EOFError:
             pass
-        except AssertionError:
-            try:
-                response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
-            except EOFError:
-                pass
-            else:
-                if response.strip().lower() not in ["n", "no"]:
-                    pull(IMAGE, args["tag"])
+        else:
+            if response.strip().lower() not in ["n", "no"]:
+                pull(IMAGE, args["tag"])
 
     # Options
     workdir = "/mnt"
