@@ -25,7 +25,7 @@ IMAGE = "cs50/cli"
 LABEL = "cli50"
 
 # Tag to use
-TAG = "minimal"
+TAG = "latest"
 
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
