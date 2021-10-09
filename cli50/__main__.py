@@ -5,6 +5,7 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
+import json
 import os
 import pkg_resources
 import re
@@ -25,7 +26,7 @@ IMAGE = "cs50/cli"
 LABEL = "cli50"
 
 # Tag to use
-TAG = "minimal"
+TAG = "latest"
 
 # Internationalization
 t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
@@ -41,29 +42,31 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
-    parser.add_argument("-f", "--fast", action="store_true", help=_("skip autoupdate"))
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
+    parser.add_argument("-p", "--pull", action="store_true", help=_("pull image before creating container"))
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default=TAG, help=_("start {}:TAG, else {}:{}").format(IMAGE, IMAGE, TAG), metavar="TAG")
-    parser.add_argument("-u", "--update", action="store_true", help=_("update only"))
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
     parser.add_argument("directory", default=os.getcwd(), metavar="DIRECTORY", nargs="?", help=_("directory to mount, else $PWD"))
     args = vars(parser.parse_args())
 
-    # Check for newer version
-    if not args["fast"] and __version__:
+    # Check PyPI for newer version
+    if __version__:
         try:
-            latest = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=pkg_resources.parse_version)
-            assert latest <= __version__
+            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=pkg_resources.parse_version)
+            assert release <= __version__
         except requests.RequestException:
             pass
         except AssertionError:
-            print(_("A newer version is available. Run `pip3 install --upgrade cli50` to upgrade."))
-
-    # Mutually exclusive arguments
-    if args["fast"] and args["update"]:
-        sys.exit("Cannot use -f/--fast and -u/--update together.")
+            try:
+                response = input("A newer version of cli50 is available. Upgrade now? [Y/n] ")
+            except EOFError:
+                pass
+            else:
+                if response.strip().lower() not in ["n", "no"]:
+                    print("Run `pip3 install --upgrade cli50` to upgrade. Then re-run cli50.")
+                    sys.exit(0)
 
     # Check if Docker installed
     if not shutil.which("docker"):
@@ -146,27 +149,35 @@ def main():
                 "--filter", f"label={LABEL}",
                 "--format", "{{.ID}}"
             ]).decode("utf-8")
-
             for ID in stdout.rstrip().splitlines():
                 subprocess.check_call(["docker", "stop", "--time", "0", ID])
-
             sys.exit(0)
         except subprocess.CalledProcessError:
             sys.exit(1)
-
-    # Update only
-    if args["update"]:
-        pull(IMAGE, args["tag"])
-        sys.exit(0)
 
     # Ensure directory exists
     directory = os.path.realpath(args["directory"])
     if not os.path.isdir(directory):
         parser.error(_("{}: no such directory").format(args['directory']))
 
-    # Check for newer image
-    if not args["fast"]:
+    # Check Docker Hub for newer image
+    if args["pull"]:
         pull(IMAGE, args["tag"])
+    else:
+        try:
+            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
+            RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
+            assert f"{IMAGE}@{digest}" == RepoDigest
+        except (requests.RequestException, subprocess.CalledProcessError):
+            pass
+        except AssertionError:
+            try:
+                response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
+            except EOFError:
+                pass
+            else:
+                if response.strip().lower() not in ["n", "no"]:
+                    pull(IMAGE, args["tag"])
 
     # Options
     workdir = "/mnt"
