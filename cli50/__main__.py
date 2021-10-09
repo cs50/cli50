@@ -166,7 +166,7 @@ def main():
             digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
             RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
             assert f"{IMAGE}@{digest}" == RepoDigest
-        except (requests.RequestException, subprocess.CalledProcessError):
+        except (IndexError, requests.RequestException, subprocess.CalledProcessError):
             pass
         except AssertionError:
             try:
