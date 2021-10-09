@@ -42,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dotfile", action="append", default=[],
                         help=_("dotfile in your $HOME to mount read-only in container's $HOME"), metavar="DOTFILE")
+    parser.add_argument("-f", "--fast", action="store_true", default=False, help=_("don't check for updates"))
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
@@ -51,7 +52,7 @@ def main():
     args = vars(parser.parse_args())
 
     # Check PyPI for newer version
-    if __version__:
+    if __version__ and not args["fast"]:
         try:
             release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=pkg_resources.parse_version)
             assert release <= __version__
@@ -160,20 +161,21 @@ def main():
         parser.error(_("{}: no such directory").format(args['directory']))
 
     # Check Docker Hub for newer image
-    try:
-        digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
-        RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
-        assert f"{IMAGE}@{digest}" == RepoDigest
-    except (requests.RequestException, subprocess.CalledProcessError):
-        pass
-    except AssertionError:
+    if not args["fast"]:
         try:
-            response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
-        except EOFError:
+            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
+            RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
+            assert f"{IMAGE}@{digest}" == RepoDigest
+        except (requests.RequestException, subprocess.CalledProcessError):
             pass
-        else:
-            if response.strip().lower() not in ["n", "no"]:
-                pull(IMAGE, args["tag"])
+        except AssertionError:
+            try:
+                response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
+            except EOFError:
+                pass
+            else:
+                if response.strip().lower() not in ["n", "no"]:
+                    pull(IMAGE, args["tag"])
 
     # Options
     workdir = "/mnt"
