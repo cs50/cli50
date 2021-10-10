@@ -120,7 +120,7 @@ def main():
                 prompt = _("Log into {}, created {}, {}").format(Image, RunningFor, Status)
                 if Mounts:
                     prompt += _(", with {} mounted").format(inflect.engine().join(Mounts))
-                prompt += "? [Y]    "  # Leave room when wrapping for "yes"
+                prompt += "? [Y/n]    "  # Leave room when wrapping for "yes"
                 columns, lines = shutil.get_terminal_size()
                 prompt = "\n".join(textwrap.wrap(prompt, columns, drop_whitespace=False)).strip() + " "
                 try:
