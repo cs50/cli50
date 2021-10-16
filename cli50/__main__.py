@@ -180,6 +180,7 @@ def main():
     # Options
     workdir = "/mnt"
     options = ["--detach",
+               "--env", f"WORKDIR={workdir}",
                "--interactive",
                "--label", LABEL,
                "--platform", "linux/amd64",
