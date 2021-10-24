@@ -166,9 +166,9 @@ def main():
             digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
             RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
             assert f"{IMAGE}@{digest}" == RepoDigest
-        except (IndexError, requests.RequestException, subprocess.CalledProcessError):
+        except (requests.RequestException, subprocess.CalledProcessError) as e:
             pass
-        except AssertionError:
+        except (AssertionError, IndexError):
             try:
                 response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
             except EOFError:
