@@ -162,13 +162,27 @@ def main():
 
     # Check Docker Hub for newer image
     if not args["fast"]:
+
+        # Remote digest
         try:
             digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
-            RepoDigest = json.loads(subprocess.check_output(["docker", "inspect", f"{IMAGE}:{args['tag']}"]).decode("utf-8"))[0]["RepoDigests"][0]
-            assert f"{IMAGE}@{digest}" == RepoDigest
-        except (requests.RequestException, subprocess.CalledProcessError) as e:
-            pass
-        except (AssertionError, IndexError):
+        except requests.RequestException:
+            digest = None
+
+        # Local digest
+        try:
+            RepoDigest = json.loads(subprocess.check_output([
+                "docker", "inspect", f"{IMAGE}:{args['tag']}"
+            ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["RepoDigests"][0]
+        except subprocess.CalledProcessError:
+            RepoDigest = None
+
+        # Pull image if no local digist
+        if not RepoDigest:
+            pull(IMAGE, args["tag"])
+
+        # Ask to update image if local digest doesn't match remote digest
+        elif digest and RepoDigest and f"{IMAGE}@{digest}" != RepoDigest:
             try:
                 response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
             except EOFError:

@@ -23,6 +23,6 @@ setup(
         "console_scripts": ["cli50=cli50.__main__:main"]
     },
     url="https://github.com/cs50/cli50",
-    version="7.1.1",
+    version="7.1.2",
     include_package_data=True
 )
