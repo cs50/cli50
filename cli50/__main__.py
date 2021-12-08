@@ -174,7 +174,7 @@ def main():
             RepoDigest = json.loads(subprocess.check_output([
                 "docker", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["RepoDigests"][0]
-        except subprocess.CalledProcessError:
+        except (IndexError, subprocess.CalledProcessError):
             RepoDigest = None
 
         # Pull image if no local digist
