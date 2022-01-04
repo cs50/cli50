@@ -164,8 +164,9 @@ def main():
     if not args["fast"]:
 
         # Determine platform architecture
-        arch = subprocess.check_output(["uname", "-m"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
-        arch = "amd64" if arch == "x86_64" else "arm64"
+        arch = json.loads(subprocess.check_output([
+            "docker", "inspect", f"{IMAGE}:{args['tag']}"
+        ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
 
         # Remote digest
         try:
