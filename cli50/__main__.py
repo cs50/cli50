@@ -163,19 +163,20 @@ def main():
     # Check Docker Hub for newer image
     if not args["fast"]:
 
-        # Determine platform architecture
-        arch = json.loads(subprocess.check_output([
-            "docker", "inspect", f"{IMAGE}:{args['tag']}"
-        ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
-
         # Remote digest
         try:
             digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
         except requests.RequestException:
             digest = None
-
+        
         # Local digest
         try:
+
+            # Determine platform architecture
+            arch = json.loads(subprocess.check_output([
+                "docker", "inspect", f"{IMAGE}:{args['tag']}"
+            ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
+            
             Manifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))
