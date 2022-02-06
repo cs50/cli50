@@ -168,7 +168,7 @@ def main():
             digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
         except requests.RequestException:
             digest = None
-        
+
         # Local digest
         try:
 
@@ -176,7 +176,7 @@ def main():
             arch = json.loads(subprocess.check_output([
                 "docker", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
-            
+
             Manifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))
@@ -184,7 +184,7 @@ def main():
                 if manifest["platform"]["architecture"] == arch:
                     ManifestDigest = f"{IMAGE}@{manifest['digest']}"
 
-        except (IndexError, subprocess.CalledProcessError):
+        except (IndexError, KeyError, subprocess.CalledProcessError):
             ManifestDigest = None
 
         # Pull image if no local digist
