@@ -5,6 +5,7 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
+import inflect
 import json
 import os
 import pkg_resources
@@ -15,8 +16,6 @@ import shutil
 import subprocess
 import textwrap
 
-import inflect
-
 from . import __version__
 
 # Image to use
@@ -24,6 +23,12 @@ IMAGE = "cs50/cli"
 
 # Label to use
 LABEL = "cli50"
+
+# Default ports to publish
+PORTS = [
+    5000,  # Flask
+    8080  # http-server
+]
 
 # Tag to use
 TAG = "latest"
@@ -45,6 +50,7 @@ def main():
     parser.add_argument("-f", "--fast", action="store_true", default=False, help=_("don't check for updates"))
     parser.add_argument("-j", "--jekyll", action="store_true", help=_("serve Jekyll site"))
     parser.add_argument("-l", "--login", const=True, default=False, help=_("log into CONTAINER"), metavar="CONTAINER", nargs="?")
+    parser.add_argument("-p", "--port", action="append", default=[], help=_("publish PORT"), metavar="PORT", type=int)
     parser.add_argument("-S", "--stop", action="store_true", help=_("stop any containers"))
     parser.add_argument("-t", "--tag", default=TAG, help=_("start {}:TAG, else {}:{}").format(IMAGE, IMAGE, TAG), metavar="TAG")
     parser.add_argument("-V", "--version", action="version", version="%(prog)s {}".format(__version__) if __version__ else "Locally installed.")
@@ -213,6 +219,14 @@ def main():
                "--volume", directory + ":" + workdir,
                "--workdir", workdir]
 
+    # Validate ports
+    if not args["port"]:
+        args["port"] = PORTS
+    for port in args["port"]:
+        if port < 1024 or port > 65535:
+            sys.exit(f"Invalid port: {port}")
+        options += ["--expose", f"{port}"]
+
     # Home directory
     home = os.path.join(os.path.expanduser("~"), "")
 
@@ -246,7 +260,7 @@ def main():
             # Publish container's ports to the host
             # https://stackoverflow.com/a/952952/5156190
             container = subprocess.check_output(["docker", "run"] + options +
-                                                [item for sublist in [['--publish', f'{port}:{port}'] for port in (8080, 8081, 8082)] for item in sublist] +
+                                                [item for sublist in [['--publish', f'{port}:{port}'] for port in args["port"]] for item in sublist] +
                                                 [f"{IMAGE}:{args['tag']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
 
         except subprocess.CalledProcessError:
