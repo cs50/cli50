@@ -254,21 +254,10 @@ def main():
     # Mount directory in new container
     try:
 
-        # Spawn container
-        try:
-
-            # Publish container's ports to the host
-            # https://stackoverflow.com/a/952952/5156190
-            container = subprocess.check_output(["docker", "run"] + options +
-                                                [item for sublist in [['--publish', f'{port}:{port}'] for port in args["port"]] for item in sublist] +
-                                                [f"{IMAGE}:{args['tag']}"] + cmd, stderr=subprocess.STDOUT).decode("utf-8").rstrip()
-
-        except subprocess.CalledProcessError:
-
-            # Publish all exposed ports to random ports
-            container = subprocess.check_output(["docker", "run"] + options +
-                                                ["--publish-all"] +
-                                                [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
+        # Publish all exposed ports to random ports
+        container = subprocess.check_output(["docker", "run"] + options +
+                                            ["--publish-all"] +
+                                            [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
         # List port mappings
         print(ports(container))
