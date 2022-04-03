@@ -182,13 +182,13 @@ def main():
             arch = json.loads(subprocess.check_output([
                 "docker", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
-
             Manifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))
             for manifest in Manifest["manifests"]:
                 if manifest["platform"]["architecture"] == arch:
                     ManifestDigest = f"{IMAGE}@{manifest['digest']}"
+                    break
 
         except (IndexError, KeyError, subprocess.CalledProcessError):
             ManifestDigest = None
