@@ -171,7 +171,7 @@ def main():
 
         # Remote digest
         try:
-            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()["images"][0]["digest"]
+            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()
         except requests.RequestException:
             digest = None
 
@@ -187,18 +187,18 @@ def main():
             ], stderr=subprocess.DEVNULL).decode("utf-8"))
             for manifest in Manifest["manifests"]:
                 if manifest["platform"]["architecture"] == arch:
-                    ManifestDigest = f"{IMAGE}@{manifest['digest']}"
+                    LocalDigest = f"{IMAGE}@{manifest['digest']}"
                     break
 
         except (IndexError, KeyError, subprocess.CalledProcessError):
-            ManifestDigest = None
+            LocalDigest = None
 
-        # Pull image if no local digist
-        if not ManifestDigest:
+        # Pull image if no local digest
+        if not LocalDigest:
             pull(IMAGE, args["tag"])
 
-        # Ask to update image if local digest doesn't match remote digest
-        elif digest and ManifestDigest and f"{IMAGE}@{digest}" != ManifestDigest:
+        # Ask to update image if local digest doesn't match any remote image digests
+        elif digest and LocalDigest and LocalDigest not in [f"{IMAGE}@{each['digest']}" for each in digest["images"]]:
             try:
                 response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
             except EOFError:
