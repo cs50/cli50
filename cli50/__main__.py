@@ -169,27 +169,19 @@ def main():
     # Check Docker Hub for newer image
     if not args["fast"]:
 
-        # Remote digest
+        # Remote manifest
         try:
-            digest = requests.get(f"https://registry.hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}").json()
+            RemoteManifest = json.loads(subprocess.check_output([
+                "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
+            ], stderr=subprocess.DEVNULL).decode("utf-8"))
         except requests.RequestException:
-            digest = None
+            RemoteManifest = None
 
         # Local digest
         try:
-
-            # Determine platform architecture
-            arch = json.loads(subprocess.check_output([
+            LocalDigest = json.loads(subprocess.check_output([
                 "docker", "inspect", f"{IMAGE}:{args['tag']}"
-            ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]["Architecture"]
-            Manifest = json.loads(subprocess.check_output([
-                "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}"
-            ], stderr=subprocess.DEVNULL).decode("utf-8"))
-            for manifest in Manifest["manifests"]:
-                if manifest["platform"]["architecture"] == arch:
-                    LocalDigest = f"{IMAGE}@{manifest['digest']}"
-                    break
-
+            ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]
         except (IndexError, KeyError, subprocess.CalledProcessError):
             LocalDigest = None
 
@@ -198,7 +190,9 @@ def main():
             pull(IMAGE, args["tag"])
 
         # Ask to update image if local digest doesn't match any remote image digests
-        elif digest and LocalDigest and LocalDigest not in [f"{IMAGE}@{each['digest']}" for each in digest["images"]]:
+        elif (LocalDigest and RemoteManifest) and \
+            LocalDigest['Id'] not in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]:
+
             try:
                 response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
             except EOFError:
@@ -316,16 +310,17 @@ def pull(image, tag):
     """Pull image as needed."""
     try:
 
-        # Get digest of local image, if any
-        digest = subprocess.check_output(["docker", "inspect", "--format", "{{index .RepoDigests 0}}", f"{image}:{tag}"],
-                                         stderr=subprocess.DEVNULL).decode("utf-8").rstrip()
+        # Get the latest manifest from registry
+        RemoteManifest = json.loads(subprocess.check_output([
+            "docker", "manifest", "inspect", f"{image}:{tag}", "--verbose"
+        ], stderr=subprocess.DEVNULL).decode("utf-8"))
 
-        # Get digest of latest image
-        # https://stackoverflow.com/a/50945459/5156190
-        response = requests.get(f"https://hub.docker.com/v2/repositories/{image}/tags/{tag}").json()["images"][0]
+        # Get local image id, if any
+        localImageId = json.loads(subprocess.check_output([
+            "docker", "inspect", f"{image}:{tag}"], stderr=subprocess.DEVNULL).decode("utf-8"))[0]['Id']
 
-        # Pull latest if digests don't match
-        assert digest == f"{image}@{response['digest']}"
+        # Pull latest if local image id does not match any digest in the manifest
+        assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
 
     except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
 
