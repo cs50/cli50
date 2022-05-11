@@ -174,7 +174,7 @@ def main():
             RemoteManifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
             ], stderr=subprocess.DEVNULL).decode("utf-8"))
-        except requests.RequestException:
+        except subprocess.CalledProcessError:
             RemoteManifest = None
 
         # Local digest
