@@ -15,6 +15,7 @@ import shlex
 import shutil
 import subprocess
 import textwrap
+import tzlocal
 
 from . import __version__
 
@@ -204,6 +205,7 @@ def main():
     # Options
     workdir = "/mnt"
     options = ["--detach",
+               "--env", f"TZ={tzlocal.get_localzone_name()}",
                "--env", f"WORKDIR={workdir}",
                "--interactive",
                "--label", LABEL,
