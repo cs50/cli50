@@ -18,12 +18,12 @@ setup(
     install_requires=["inflect", "requests", "tzlocal"],
     keywords="cli50",
     name="cli50",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     packages=["cli50"],
     entry_points={
         "console_scripts": ["cli50=cli50.__main__:main"]
     },
     url="https://github.com/cs50/cli50",
-    version="7.3.0",
+    version="7.4.0",
     include_package_data=True
 )
