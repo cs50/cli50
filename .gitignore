@@ -1,9 +1,9 @@
 .*
+!/.github/
+!.gitignore
 *.egg-info
 *.mo
 *.pyc
-!.github
-!.gitignore
 build/
 dist/
-__pycache__
+__pycache__/

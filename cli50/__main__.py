@@ -215,6 +215,10 @@ def main():
                "--volume", directory + ":" + workdir,
                "--workdir", workdir]
 
+    # Check for locale
+    if lang := os.getenv("LANG"):
+        options += ["--env", f"LANG={lang}"]
+
     # Validate ports
     if not args["port"]:
         args["port"] = PORTS
