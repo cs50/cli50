@@ -15,8 +15,8 @@ import shutil
 import subprocess
 import textwrap
 import tzlocal
-from packaging import version
 from importlib.resources import files
+from packaging import version
 
 from . import __version__
 
