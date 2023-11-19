@@ -8,7 +8,6 @@ import gettext
 import inflect
 import json
 import os
-import pkg_resources
 import re
 import requests
 import shlex
@@ -16,6 +15,8 @@ import shutil
 import subprocess
 import textwrap
 import tzlocal
+from importlib.resources import files
+from packaging import version
 
 from . import __version__
 
@@ -35,7 +36,7 @@ PORTS = [
 TAG = "latest"
 
 # Internationalization
-t = gettext.translation("cli50", pkg_resources.resource_filename("cli50", "locale"), fallback=True)
+t = gettext.translation("cli50", str(files("cli50").joinpath("locale")), fallback=True)
 t.install()
 
 
@@ -61,7 +62,7 @@ def main():
     # Check PyPI for newer version
     if __version__ and not args["fast"]:
         try:
-            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=pkg_resources.parse_version)
+            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=version.parse)
             assert release <= __version__
         except requests.RequestException:
             pass
