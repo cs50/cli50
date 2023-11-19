@@ -6,7 +6,6 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 import argparse
 import gettext
 import inflect
-import importlib
 import json
 import os
 import re
@@ -17,6 +16,7 @@ import subprocess
 import textwrap
 import tzlocal
 from packaging import version
+from importlib.resources import files
 
 from . import __version__
 
@@ -36,8 +36,7 @@ PORTS = [
 TAG = "latest"
 
 # Internationalization
-path = importlib.resources.files("cli50").joinpath("locale")
-t = gettext.translation("cli50", str(path), fallback=True)
+t = gettext.translation("cli50", str(files("cli50").joinpath("locale")), fallback=True)
 t.install()
 
 
