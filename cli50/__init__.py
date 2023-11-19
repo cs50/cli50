@@ -1,22 +1,13 @@
 import os
-from pkg_resources import DistributionNotFound, get_distribution
+import sys
+from importlib.metadata import PackageNotFoundError, version
 
-# https://stackoverflow.com/a/17638236/5156190
+# Require Python 3.8+
+if sys.version_info < (3, 8):
+    sys.exit("You have an old version of python. Install version 3.8 or higher.")
+
+# Get version
 try:
-
-    # Get package's distribution
-    _dist = get_distribution("cli50")
-
-    # Normalize path for cross-OS compatibility
-    _dist_loc = os.path.normcase(_dist.location)
-    _here = os.path.normcase(__file__)
-
-    # This version is not installed, but another version is
-    if not _here.startswith(os.path.join(_dist_loc, "cli50")):
-        raise DistributionNotFound
-
-except DistributionNotFound:
-    __version__ = None
-
-else:
-    __version__ = _dist.version
+    __version__ = version("cli50")
+except PackageNotFoundError:
+    __version__ = "UNKNOWN"
