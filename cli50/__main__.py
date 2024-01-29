@@ -213,6 +213,7 @@ def main():
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
                "--volume", directory + ":" + workdir,
+               "--volume", "/var/run/docker.sock:/var/run/docker-host.sock",  # https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/devcontainer-feature.json
                "--workdir", workdir]
 
     # Check for locale
@@ -259,6 +260,10 @@ def main():
                                             ["--publish-all"] +
                                             [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
+        # Start Docker-outside-of-Docker
+        # a la https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/install.sh
+        subprocess.check_output(["docker", "exec", container, "sudo", "/etc/init.d/docker", "start"])
+
         # List port mappings
         print(ports(container))
 
@@ -266,7 +271,8 @@ def main():
         print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
         subprocess.call(["docker", "attach", container])
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(e.output)
         sys.exit(1)
     else:
         sys.exit(0)
