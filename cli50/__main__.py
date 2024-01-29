@@ -271,8 +271,7 @@ def main():
         print(subprocess.check_output(["docker", "logs", container]).decode("utf-8"), end="")
         subprocess.call(["docker", "attach", container])
 
-    except subprocess.CalledProcessError as e:
-        print(e.output)
+    except subprocess.CalledProcessError:
         sys.exit(1)
     else:
         sys.exit(0)
