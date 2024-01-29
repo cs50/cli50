@@ -260,9 +260,12 @@ def main():
                                             ["--publish-all"] +
                                             [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
 
-        # Start Docker-outside-of-Docker
+        # Start Docker-outside-of-Docker (if supported by TAG)
         # a la https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/install.sh
-        subprocess.check_output(["docker", "exec", container, "sudo", "/etc/init.d/docker", "start"])
+        try:
+            subprocess.check_output(["docker", "exec", container, "sudo", "/etc/init.d/docker", "start"])
+        except subprocess.CalledProcessError:
+            pass
 
         # List port mappings
         print(ports(container))
