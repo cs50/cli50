@@ -205,6 +205,7 @@ def main():
     # Options
     workdir = "/mnt"
     options = ["--detach",
+               "--env", f"LOCAL_WORKSPACE_FOLDER={directory}",
                "--env", f"TZ={tzlocal.get_localzone_name()}",
                "--env", f"WORKDIR={workdir}",
                "--interactive",
