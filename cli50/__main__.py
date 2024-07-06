@@ -206,6 +206,7 @@ def main():
     # Options
     workdir = "/mnt"
     options = ["--detach",
+               "--env", f"LOCAL_WORKSPACE_FOLDER={directory}",
                "--env", f"TZ={tzlocal.get_localzone_name()}",
                "--env", f"WORKDIR={workdir}",
                "--interactive",
@@ -214,6 +215,7 @@ def main():
                "--security-opt", "seccomp=unconfined",  # https://stackoverflow.com/q/35860527#comment62818827_35860527, https://github.com/apple/swift-docker/issues/9#issuecomment-328218803
                "--tty",
                "--volume", directory + ":" + workdir,
+               "--volume", "/var/run/docker.sock:/var/run/docker-host.sock",  # https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/devcontainer-feature.json
                "--workdir", workdir]
 
     # Check for locale
@@ -259,6 +261,13 @@ def main():
         container = subprocess.check_output(["docker", "run"] + options +
                                             ["--publish-all"] +
                                             [f"{IMAGE}:{args['tag']}"] + cmd).decode("utf-8").rstrip()
+
+        # Start Docker-outside-of-Docker (if supported by TAG)
+        # a la https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/install.sh
+        try:
+            subprocess.check_output(["docker", "exec", container, "sudo", "/etc/init.d/docker", "start"])
+        except subprocess.CalledProcessError:
+            pass
 
         # List port mappings
         print(ports(container))
