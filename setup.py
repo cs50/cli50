@@ -6,7 +6,7 @@ setup(
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development"
     ],
     message_extractors = {
@@ -24,6 +24,6 @@ setup(
         "console_scripts": ["cli50=cli50.__main__:main"]
     },
     url="https://github.com/cs50/cli50",
-    version="7.5.1",
+    version="8.0.0",
     include_package_data=True
 )
