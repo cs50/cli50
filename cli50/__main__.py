@@ -135,7 +135,7 @@ def main():
                     stdin = input(prompt)
                 except EOFError:
                     break
-                if re.match("^\s*(?:y|yes)?\s*$", stdin, re.I):
+                if re.match(r"^\s*(?:y|yes)?\s*$", stdin, re.I):
                     try:
                         print(ports(ID))
                         login(ID)
