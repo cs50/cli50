@@ -264,7 +264,7 @@ def main():
         # Start Docker-outside-of-Docker (if supported by TAG)
         # a la https://github.com/devcontainers/features/blob/main/src/docker-outside-of-docker/install.sh
         try:
-            subprocess.check_output(["docker", "exec", container, "sudo", "/etc/init.d/docker", "start"])
+            subprocess.check_output(["docker", "exec", "--detach", container, "sudo", "/etc/init.d/docker", "start"])
         except subprocess.CalledProcessError:
             pass
 
