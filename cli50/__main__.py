@@ -5,16 +5,13 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
-import inflect
-import json
 import os
 import re
 import requests
-import shlex
 import shutil
 import subprocess
-import textwrap
 import tzlocal
+
 from importlib.resources import files
 from packaging import version
 
@@ -123,6 +120,7 @@ def main():
             sys.exit("No containers are running.")
 
         # Ask whether to use a running container
+        import inflect, textwrap
         for ID, Image, RunningFor, Status, Mounts in containers:
             while True:
                 prompt = _("Log into {}, created {}, {}").format(Image, RunningFor, Status)
@@ -172,6 +170,7 @@ def main():
     if not args["fast"]:
 
         # Remote manifest
+        import json
         try:
             RemoteManifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
@@ -324,6 +323,7 @@ def ports(container):
 
 def pull(image, tag):
     """Pull image as needed."""
+    import json
     try:
 
         # Get the latest manifest from registry
