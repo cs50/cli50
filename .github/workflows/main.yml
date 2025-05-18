@@ -10,7 +10,7 @@ jobs:
 
       - name: Compile catalog
         run: |
-          pip install babel
+          pip install babel setuptools
           python setup.py compile_catalog
 
       - name: Install pypa/build
