@@ -32,7 +32,7 @@ jobs:
         id: program_version
         run: |
           pip install .
-          echo ::set-output name=version::$(cli50 --version | cut --delimiter ' ' --fields 2)
+          echo "version=$(cli50 --version | cut --delimiter ' ' --fields 2)" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: ${{ github.ref == 'refs/heads/main' }}
