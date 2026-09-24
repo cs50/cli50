@@ -5,12 +5,14 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
+import json
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tzlocal
+import urllib.error
+import urllib.request
 
 from importlib.resources import files
 from packaging import version
@@ -59,9 +61,9 @@ def main():
     # Check PyPI for newer version
     if __version__ and not args["fast"]:
         try:
-            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=version.parse)
+            release = max(pypi_releases(), key=version.parse)
             assert release <= __version__
-        except requests.RequestException:
+        except (OSError, urllib.error.URLError):
             pass
         except AssertionError:
             try:
@@ -323,7 +325,6 @@ def ports(container):
 
 def pull(image, tag):
     """Pull image as needed."""
-    import json
     try:
 
         # Get the latest manifest from registry
@@ -338,10 +339,16 @@ def pull(image, tag):
         # Pull latest if local image id does not match any digest in the manifest
         assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
 
-    except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
+    except (AssertionError, OSError, urllib.error.URLError, subprocess.CalledProcessError):
 
         # Pull image
         subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
+
+
+def pypi_releases():
+    """Return release versions published to PyPI."""
+    with urllib.request.urlopen("https://pypi.org/pypi/cli50/json") as response:
+        return json.load(response)["releases"]
 
 
 if __name__ == "__main__":
