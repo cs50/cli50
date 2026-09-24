@@ -221,6 +221,12 @@ def main():
     if lang := os.getenv("LANG"):
         options += ["--env", f"LANG={lang}"]
 
+    # Check for .env
+    try:
+        options += env_options(directory)
+    except RuntimeError as e:
+        sys.exit(_("{}: unable to source").format(e))
+
     # Validate ports
     if not args["port"]:
         args["port"] = PORTS
@@ -319,6 +325,30 @@ def ports(container):
     # Filter out IPv6 mappings as unneeded
     mappings = list(filter(lambda mapping: not mapping.startswith(":::"), re.split(r", ", output)))
     return ", ".join(mappings)
+
+
+def env_options(directory):
+    """Return Docker options for .env in directory."""
+    dotenv = os.path.join(directory, ".env")
+    if not os.path.isfile(dotenv):
+        return []
+    try:
+        before = subprocess.check_output([
+            "bash", "-c", "env -0"
+        ], env={}, cwd=directory).decode("utf-8")
+        after = subprocess.check_output([
+            "bash", "-c", 'set -a && source "$1" && env -0', "_", dotenv
+        ], env={}, cwd=directory).decode("utf-8")
+    except subprocess.CalledProcessError:
+        raise RuntimeError(dotenv) from None
+
+    before = dict(entry.split("=", 1) for entry in before.rstrip("\0").split("\0") if entry)
+    after = dict(entry.split("=", 1) for entry in after.rstrip("\0").split("\0") if entry)
+    options = []
+    for key, value in after.items():
+        if before.get(key) != value:
+            options += ["--env", f"{key}={value}"]
+    return options
 
 
 def pull(image, tag):
