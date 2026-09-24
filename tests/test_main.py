@@ -2,6 +2,7 @@ import io
 import json
 import os
 import argparse
+import subprocess
 import unittest
 from unittest import mock
 
@@ -47,6 +48,17 @@ class PypiReleasesTestCase(unittest.TestCase):
 
         self.assertEqual(raised.exception.code, 2)
         prompt.assert_not_called()
+
+    def test_pull_falls_back_when_manifest_lookup_fails(self):
+        error = subprocess.CalledProcessError(1, ["docker", "manifest", "inspect"])
+
+        with mock.patch("subprocess.check_output", side_effect=error), \
+             mock.patch("subprocess.call") as docker_pull:
+            __main__.pull("cs50/cli", "latest")
+
+        docker_pull.assert_called_once_with(
+            ["docker", "pull", "cs50/cli:latest"], stderr=__main__.subprocess.DEVNULL
+        )
 
     def _assert_update_check_failure_is_ignored(self, error):
         args = argparse.Namespace(

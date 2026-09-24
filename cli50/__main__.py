@@ -337,13 +337,14 @@ def pull(image, tag):
         localImageId = json.loads(subprocess.check_output([
             "docker", "inspect", f"{image}:{tag}"], stderr=subprocess.DEVNULL).decode("utf-8"))[0]['Id']
 
-        # Pull latest if local image id does not match any digest in the manifest
-        assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
+        if localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]:
+            return
 
-    except (AssertionError, subprocess.CalledProcessError):
+    except (IndexError, KeyError, TypeError, json.JSONDecodeError, subprocess.SubprocessError):
+        pass
 
-        # Pull image
-        subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
+    # Pull image
+    subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
 
 
 def pypi_releases():
