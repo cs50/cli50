@@ -5,12 +5,14 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
+import json
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tzlocal
+import urllib.error
+import urllib.request
 
 from importlib.resources import files
 from packaging import version
@@ -59,19 +61,21 @@ def main():
     # Check PyPI for newer version
     if __version__ and not args["fast"]:
         try:
-            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=version.parse)
-            assert release <= __version__
-        except requests.RequestException:
+            release = max(pypi_releases(), key=version.parse)
+            if version.parse(release) <= version.parse(__version__):
+                release = None
+        except (OSError, urllib.error.URLError, json.JSONDecodeError, KeyError, TypeError, ValueError):
             pass
-        except AssertionError:
-            try:
-                response = input("A newer version of cli50 is available. Upgrade now? [Y/n] ")
-            except EOFError:
-                pass
-            else:
-                if response.strip().lower() not in ["n", "no"]:
-                    print("Run `pip3 install --upgrade cli50` to upgrade. Then re-run cli50.")
-                    sys.exit(0)
+        else:
+            if release is not None:
+                try:
+                    response = input("A newer version of cli50 is available. Upgrade now? [Y/n] ")
+                except EOFError:
+                    pass
+                else:
+                    if response.strip().lower() not in ["n", "no"]:
+                        print("Run `pip3 install --upgrade cli50` to upgrade. Then re-run cli50.")
+                        sys.exit(0)
 
     # Check if Docker installed
     if not shutil.which("docker"):
@@ -170,7 +174,6 @@ def main():
     if not args["fast"]:
 
         # Remote manifest
-        import json
         try:
             RemoteManifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
@@ -323,7 +326,6 @@ def ports(container):
 
 def pull(image, tag):
     """Pull image as needed."""
-    import json
     try:
 
         # Get the latest manifest from registry
@@ -335,13 +337,20 @@ def pull(image, tag):
         localImageId = json.loads(subprocess.check_output([
             "docker", "inspect", f"{image}:{tag}"], stderr=subprocess.DEVNULL).decode("utf-8"))[0]['Id']
 
-        # Pull latest if local image id does not match any digest in the manifest
-        assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
+        if localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]:
+            return
 
-    except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
+    except (OSError, subprocess.CalledProcessError):
+        pass
 
-        # Pull image
-        subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
+    # Pull image
+    subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
+
+
+def pypi_releases():
+    """Return release versions published to PyPI."""
+    with urllib.request.urlopen("https://pypi.org/pypi/cli50/json", timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))["releases"]
 
 
 if __name__ == "__main__":
