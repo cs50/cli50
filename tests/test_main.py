@@ -15,7 +15,7 @@ class PypiReleasesTestCase(unittest.TestCase):
         with mock.patch("urllib.request.urlopen", return_value=payload) as urlopen:
             self.assertEqual(__main__.pypi_releases(), {"8.0.1": [], "8.0.0": []})
 
-        urlopen.assert_called_once_with("https://pypi.org/pypi/cli50/json")
+        urlopen.assert_called_once_with("https://pypi.org/pypi/cli50/json", timeout=10)
 
     def test_main_ignores_invalid_pypi_json(self):
         self._assert_update_check_failure_is_ignored(

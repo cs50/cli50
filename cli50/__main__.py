@@ -346,7 +346,7 @@ def pull(image, tag):
 
 def pypi_releases():
     """Return release versions published to PyPI."""
-    with urllib.request.urlopen("https://pypi.org/pypi/cli50/json") as response:
+    with urllib.request.urlopen("https://pypi.org/pypi/cli50/json", timeout=10) as response:
         return json.loads(response.read().decode("utf-8"))["releases"]
 
 
