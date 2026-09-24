@@ -63,7 +63,7 @@ def main():
         try:
             release = max(pypi_releases(), key=version.parse)
             assert release <= __version__
-        except (OSError, urllib.error.URLError):
+        except (OSError, urllib.error.URLError, json.JSONDecodeError, KeyError, TypeError, ValueError):
             pass
         except AssertionError:
             try:
@@ -172,7 +172,6 @@ def main():
     if not args["fast"]:
 
         # Remote manifest
-        import json
         try:
             RemoteManifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
@@ -339,7 +338,7 @@ def pull(image, tag):
         # Pull latest if local image id does not match any digest in the manifest
         assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
 
-    except (AssertionError, OSError, urllib.error.URLError, subprocess.CalledProcessError):
+    except (AssertionError, subprocess.CalledProcessError):
 
         # Pull image
         subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
