@@ -62,18 +62,20 @@ def main():
     if __version__ and not args["fast"]:
         try:
             release = max(pypi_releases(), key=version.parse)
-            assert version.parse(release) <= version.parse(__version__)
+            if version.parse(release) <= version.parse(__version__):
+                release = None
         except (OSError, urllib.error.URLError, json.JSONDecodeError, KeyError, TypeError, ValueError):
             pass
-        except AssertionError:
-            try:
-                response = input("A newer version of cli50 is available. Upgrade now? [Y/n] ")
-            except EOFError:
-                pass
-            else:
-                if response.strip().lower() not in ["n", "no"]:
-                    print("Run `pip3 install --upgrade cli50` to upgrade. Then re-run cli50.")
-                    sys.exit(0)
+        else:
+            if release is not None:
+                try:
+                    response = input("A newer version of cli50 is available. Upgrade now? [Y/n] ")
+                except EOFError:
+                    pass
+                else:
+                    if response.strip().lower() not in ["n", "no"]:
+                        print("Run `pip3 install --upgrade cli50` to upgrade. Then re-run cli50.")
+                        sys.exit(0)
 
     # Check if Docker installed
     if not shutil.which("docker"):
