@@ -340,7 +340,7 @@ def pull(image, tag):
         if localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]:
             return
 
-    except (IndexError, KeyError, TypeError, json.JSONDecodeError, subprocess.SubprocessError):
+    except subprocess.SubprocessError:
         pass
 
     # Pull image

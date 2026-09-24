@@ -60,6 +60,17 @@ class PypiReleasesTestCase(unittest.TestCase):
             ["docker", "pull", "cs50/cli:latest"], stderr=__main__.subprocess.DEVNULL
         )
 
+    def test_pull_does_not_hide_invalid_manifest_data(self):
+        manifest = b'{"unexpected": []}'
+        local = b'[{"Id": "sha256:test"}]'
+
+        with mock.patch("subprocess.check_output", side_effect=[manifest, local]), \
+             mock.patch("subprocess.call") as docker_pull, \
+             self.assertRaises((KeyError, TypeError)):
+            __main__.pull("cs50/cli", "latest")
+
+        docker_pull.assert_not_called()
+
     def _assert_update_check_failure_is_ignored(self, error):
         args = argparse.Namespace(
             directory=os.getcwd(),
