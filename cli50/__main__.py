@@ -223,6 +223,7 @@ def main():
 
     # Check for .env
     try:
+        # Source and export any variables from DIRECTORY/.env.
         options += env_options(directory)
     except RuntimeError as e:
         sys.exit(_("{}: unable to source").format(e))
@@ -333,9 +334,13 @@ def env_options(directory):
     if not os.path.isfile(dotenv):
         return []
     try:
+        # Capture bash's baseline environment so shell defaults like PWD
+        # are not forwarded unless DIRECTORY/.env actually changes them.
         before = subprocess.check_output([
             "bash", "-c", "env -0"
         ], env={}, cwd=directory).decode("utf-8")
+
+        # Source and export DIRECTORY/.env, then emit the resulting environment.
         after = subprocess.check_output([
             "bash", "-c", 'set -a && source "$1" && env -0', "_", dotenv
         ], env={}, cwd=directory).decode("utf-8")
