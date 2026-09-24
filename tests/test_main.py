@@ -60,6 +60,15 @@ class PypiReleasesTestCase(unittest.TestCase):
             ["docker", "pull", "cs50/cli:latest"], stderr=__main__.subprocess.DEVNULL
         )
 
+    def test_pull_falls_back_when_manifest_command_cannot_run(self):
+        with mock.patch("subprocess.check_output", side_effect=OSError("docker unavailable")), \
+             mock.patch("subprocess.call") as docker_pull:
+            __main__.pull("cs50/cli", "latest")
+
+        docker_pull.assert_called_once_with(
+            ["docker", "pull", "cs50/cli:latest"], stderr=__main__.subprocess.DEVNULL
+        )
+
     def test_pull_does_not_hide_invalid_manifest_data(self):
         manifest = b'{"unexpected": []}'
         local = b'[{"Id": "sha256:test"}]'
