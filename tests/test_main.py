@@ -25,6 +25,29 @@ class PypiReleasesTestCase(unittest.TestCase):
     def test_main_ignores_missing_pypi_releases(self):
         self._assert_update_check_failure_is_ignored(KeyError("releases"))
 
+    def test_main_compares_versions_semantically(self):
+        args = argparse.Namespace(
+            directory=os.getcwd(),
+            dotfile=[],
+            fast=False,
+            jekyll=False,
+            login=False,
+            port=[],
+            stop=False,
+            tag=__main__.TAG,
+        )
+
+        with mock.patch.object(__main__, "__version__", "10.0.0"), \
+             mock.patch("argparse.ArgumentParser.parse_args", return_value=args), \
+             mock.patch.object(__main__, "pypi_releases", return_value={"9.9.9": []}), \
+             mock.patch("shutil.which", return_value=None), \
+             mock.patch("builtins.input") as prompt, \
+             self.assertRaises(SystemExit) as raised:
+            __main__.main()
+
+        self.assertEqual(raised.exception.code, 2)
+        prompt.assert_not_called()
+
     def _assert_update_check_failure_is_ignored(self, error):
         args = argparse.Namespace(
             directory=os.getcwd(),

@@ -62,7 +62,7 @@ def main():
     if __version__ and not args["fast"]:
         try:
             release = max(pypi_releases(), key=version.parse)
-            assert release <= __version__
+            assert version.parse(release) <= version.parse(__version__)
         except (OSError, urllib.error.URLError, json.JSONDecodeError, KeyError, TypeError, ValueError):
             pass
         except AssertionError:
