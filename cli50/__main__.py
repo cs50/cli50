@@ -5,12 +5,14 @@ signal.signal(signal.SIGINT, lambda signum, frame: sys.exit(1))
 
 import argparse
 import gettext
+import json
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tzlocal
+import urllib.error
+import urllib.request
 
 from importlib.resources import files
 from packaging import version
@@ -59,9 +61,11 @@ def main():
     # Check PyPI for newer version
     if __version__ and not args["fast"]:
         try:
-            release = max(requests.get("https://pypi.org/pypi/cli50/json").json()["releases"], key=version.parse)
-            assert release <= __version__
-        except requests.RequestException:
+            with urllib.request.urlopen("https://pypi.org/pypi/cli50/json", timeout=10) as response:
+                releases = json.load(response)["releases"]
+            release = max(releases, key=version.parse)
+            assert version.parse(release) <= version.parse(__version__)
+        except (KeyError, OSError, ValueError):
             pass
         except AssertionError:
             try:
@@ -170,7 +174,6 @@ def main():
     if not args["fast"]:
 
         # Remote manifest
-        import json
         try:
             RemoteManifest = json.loads(subprocess.check_output([
                 "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
