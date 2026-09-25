@@ -173,30 +173,22 @@ def main():
     # Check Docker Hub for newer image
     if not args["fast"]:
 
-        # Remote manifest
+        # Remote digest
         try:
-            RemoteManifest = json.loads(subprocess.check_output([
-                "docker", "manifest", "inspect", f"{IMAGE}:{args['tag']}", "--verbose"
-            ], stderr=subprocess.DEVNULL).decode("utf-8"))
-        except subprocess.CalledProcessError:
-            RemoteManifest = None
+            with urllib.request.urlopen(f"https://hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}", timeout=5) as response:
+                remote = json.load(response)["digest"]
+        except (KeyError, OSError, ValueError):
+            remote = None
 
         # Local digest
-        try:
-            LocalDigest = json.loads(subprocess.check_output([
-                "docker", "inspect", f"{IMAGE}:{args['tag']}"
-            ], stderr=subprocess.DEVNULL).decode("utf-8"))[0]
-        except (IndexError, KeyError, subprocess.CalledProcessError):
-            LocalDigest = None
+        local = subprocess.run(["docker", "inspect", "--format", "{{.Id }} {{.RepoDigests}}", f"{IMAGE}:{args['tag']}"], capture_output=True, text=True).stdout.split()
 
         # Pull image if no local digest
-        if not LocalDigest:
+        if not local:
             pull(IMAGE, args["tag"])
 
         # Ask to update image if local digest doesn't match any remote image digests
-        elif (LocalDigest and RemoteManifest) and \
-            LocalDigest['Id'] not in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]:
-
+        elif remote not in local:
             try:
                 response = input(f"A newer version of {IMAGE}:{args['tag']} is available. Pull now? [Y/n] ")
             except EOFError:
@@ -326,7 +318,6 @@ def ports(container):
 
 def pull(image, tag):
     """Pull image as needed."""
-    import json
     try:
 
         # Get the latest manifest from registry
@@ -339,9 +330,9 @@ def pull(image, tag):
             "docker", "inspect", f"{image}:{tag}"], stderr=subprocess.DEVNULL).decode("utf-8"))[0]['Id']
 
         # Pull latest if local image id does not match any digest in the manifest
-        assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest] == True
+        assert localImageId in [manifest['SchemaV2Manifest']['config']['digest'] for manifest in RemoteManifest]
 
-    except (AssertionError, requests.exceptions.ConnectionError, subprocess.CalledProcessError):
+    except (AssertionError, subprocess.CalledProcessError):
 
         # Pull image
         subprocess.call(["docker", "pull", f"{image}:{tag}"], stderr=subprocess.DEVNULL)
