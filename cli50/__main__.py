@@ -177,7 +177,7 @@ def main():
         try:
             with urllib.request.urlopen(f"https://hub.docker.com/v2/repositories/{IMAGE}/tags/{args['tag']}", timeout=5) as response:
                 remote = json.load(response)["digest"]
-        except (OSError, KeyError, ValueError):
+        except (KeyError, OSError, ValueError):
             remote = None
 
         # Local digest
